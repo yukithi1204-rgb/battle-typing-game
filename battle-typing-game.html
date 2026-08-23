@@ -1,0 +1,3743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>⚔️バトルタイピング⚔️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;900&family=Kosugi+Maru&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Kosugi Maru', sans-serif;
+    background: radial-gradient(circle at 30% 10%, #3a1155, #100616 75%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #app { width: 100%; max-width: 560px; position: relative; }
+  h1 {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 900;
+    font-size: 24px;
+    text-align: center;
+    background: linear-gradient(90deg, #ff2e93, #ffd23f, #00e5ff, #ff2e93);
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shine 4s linear infinite;
+    margin-bottom: 4px;
+  }
+  @keyframes shine { to { background-position: 300% center; } }
+  .headerRow { text-align: center; }
+  #muteBtn {
+    position: absolute; top: 6px; right: 6px; z-index: 20;
+    font-size: 15px; border: none; border-radius: 999px;
+    background: rgba(255,255,255,0.12); width: 30px; height: 30px;
+    padding: 0; box-sizing: border-box; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+    -webkit-text-fill-color: initial; flex-shrink: 0;
+  }
+  .subtitle { text-align: center; color: #f4c4e0; font-size: 12px; margin-bottom: 14px; opacity: 0.85; }
+
+  #topbar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 6px; text-align: center; }
+  .stat .label { font-size: 10px; color: #ffd23f; letter-spacing: 1px; }
+  .stat .value { font-size: 18px; font-weight: 900; color: #fff; font-family: 'M PLUS Rounded 1c', sans-serif; }
+
+  #arena {
+    position: relative;
+    height: 360px;
+    /* ▼ 変更：まっくらな色 → ゆうやけの空＋じめんの「たたかいのぶたい」に */
+    background:
+      radial-gradient(circle at 78% 20%, rgba(255,224,130,0.95), rgba(255,224,130,0.35) 9%, transparent 20%),
+      linear-gradient(180deg,
+        #241442 0%, #4a2a68 26%, #a34a7a 50%, #ff8a5c 64%, #ffcf6b 70%,
+        #6fae5c 70%, #4c8a44 82%, #356b32 100%);
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(255,46,147,0.2) inset, 0 8px 24px rgba(0,0,0,0.4);
+    transition: background 0.8s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  #arena::before {
+    /* ▼ 追加：じめんのむこうに、うっすら山のシルエット（モンスターより奥に出す） */
+    content: '';
+    position: absolute; left: -5%; right: -5%; bottom: 18%; height: 46px;
+    background: var(--mountainColor, #3a2a52);
+    opacity: 0.55;
+    transition: background 0.6s ease;
+    clip-path: polygon(0% 100%, 8% 45%, 20% 78%, 33% 20%, 48% 70%, 62% 15%, 76% 65%, 90% 30%, 100% 100%);
+    pointer-events: none;
+  }
+  /* ▼ 追加：ふわふわ ながれる 雲(すべてのステージに共通で、立体感をだす) */
+  #arenaClouds {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    opacity: 0.5; filter: blur(1.5px);
+    background-image:
+      radial-gradient(ellipse 70px 20px at 0 0, #fff, transparent 72%),
+      radial-gradient(ellipse 95px 26px at 0 0, #fff, transparent 72%),
+      radial-gradient(ellipse 55px 16px at 0 0, #fff, transparent 72%),
+      radial-gradient(ellipse 40px 12px at 0 0, #fff, transparent 72%);
+    background-repeat: no-repeat;
+    background-position: 8% 12%, 52% 7%, 78% 16%, 30% 22%;
+    animation: cloudDrift 55s linear infinite;
+  }
+  @keyframes cloudDrift {
+    0% { background-position: 8% 12%, 52% 7%, 78% 16%, 30% 22%; }
+    100% { background-position: 40% 12%, 84% 7%, 108% 16%, 62% 22%; }
+  }
+  /* ▼ 追加：とおくの山のかすみ(空気遠近感で立体感をだす) */
+  #arenaHaze {
+    position: absolute; left: 0; right: 0; bottom: 15%; height: 90px;
+    pointer-events: none; z-index: 0;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.16) 55%, transparent);
+    filter: blur(7px);
+  }
+  /* ▼ 追加：地面のうっすらしたテクスチャ(草のすじ) */
+  #arenaGroundTexture {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 30%;
+    pointer-events: none; z-index: 0;
+    background: repeating-linear-gradient(100deg,
+      rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 2px,
+      transparent 2px, transparent 9px);
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+  #arena::after {
+    /* ▼ 変更：ふだんは消えていて、ボスせんのときだけ ちらちら光る（いちばん手前） */
+    content: '';
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 50% 15%, rgba(255,20,20,0.3), transparent 55%);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  #arena.boss-mode::after {
+    opacity: 1;
+    animation: eerieFlicker 4.5s ease-in-out infinite;
+  }
+  @keyframes eerieFlicker {
+    0%, 100% { opacity: 0.25; }
+    46% { opacity: 0.25; }
+    48% { opacity: 0.65; }
+    50% { opacity: 0.2; }
+    53% { opacity: 0.55; }
+    57% { opacity: 0.25; }
+  }
+  @keyframes arenaShake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-3px, 2px); }
+    50% { transform: translate(3px, -2px); }
+    75% { transform: translate(-2px, 2px); }
+  }
+  #arena.shake { animation: arenaShake 0.3s ease; }
+
+  /* ▼ 追加：777ぶんの1で出る「げきレアステージ」の、にじいろひかりエフェクト */
+  #arena.rare-stage {
+    background-size: 400% 400% !important;
+    animation: rainbowShift 3s ease infinite;
+    border-color: #ffd23f !important;
+    box-shadow: 0 0 40px rgba(255,210,63,0.6) inset, 0 8px 24px rgba(0,0,0,0.4), 0 0 30px rgba(255,210,63,0.7) !important;
+  }
+  @keyframes rainbowShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  #playerBarWrap, #enemyBarWrap {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 700;
+  }
+  #playerBarWrap { bottom: 14px; }
+  #enemyBarWrap { top: 14px; }
+  .barTrack { flex: 1; height: 12px; background: rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+  .barFill { height: 100%; transition: width 0.25s ease; }
+  #playerFill { background: linear-gradient(90deg, #ff2e93, #ff85c1); }
+  #enemyFill { background: linear-gradient(90deg, #37c8e0, #9df9ff); }
+
+  #enemySprite {
+    width: 110px;
+    height: 110px;
+    transition: transform 0.15s ease, width 0.2s ease, height 0.2s ease;
+    animation: glowPulse 1.6s ease-in-out infinite;
+    --glowColor: rgba(255,20,20,0.65);
+  }
+  @keyframes glowPulse {
+    0%, 100% { filter: drop-shadow(0 8px 10px rgba(0,0,0,0.5)) drop-shadow(0 0 12px var(--glowColor)); }
+    50% { filter: drop-shadow(0 8px 10px rgba(0,0,0,0.5)) drop-shadow(0 0 34px var(--glowColor)); }
+  }
+  #enemySprite svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    animation: monsterBob 1.8s ease-in-out infinite;
+    filter: brightness(0.68) contrast(1.3) saturate(1.25); /* ← もどした：くらすぎない、ちょうどいいくらさ */
+  }
+  @keyframes monsterBob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(-2deg); }
+  }
+  #enemySprite.hit { transform: scale(0.7) translateY(10px); }
+  #enemyName { color: #ffd23f; font-weight: 700; font-size: 14px; }
+  #enemyName.lastboss { color: #ff2e93; text-shadow: 0 0 8px #ffd23f; }
+
+  #wordBubble {
+    background: #fff;
+    color: #1a0b2e;
+    font-weight: 900;
+    font-size: 22px;
+    padding: 10px 20px;
+    border-radius: 14px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    transition: transform 0.06s ease;
+  }
+  #wordBubble .kana { font-size: 22px; }
+  #wordBubble .romaji { font-size: 22px; margin-top: 8px; letter-spacing: 2px; font-family: monospace; font-weight: 700; }
+  #wordBubble .romaji .done { color: #ff2e93; }
+  #wordBubble .romaji .rest { color: #b8b0c2; }
+  #wordBubble .romaji .next {
+    color: #00b7c2; background: #fff6a8; border-radius: 4px; padding: 0 2px;
+    text-decoration: underline; text-decoration-color: #ff8a3c; text-decoration-thickness: 3px;
+    display: inline-block; animation: nextKeyPulse 0.7s ease-in-out infinite;
+  }
+  @keyframes nextKeyPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+  }
+  #timerTrack { width: 70%; height: 8px; background: rgba(0,0,0,0.35); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+  #nextPreview {
+    align-self: flex-end; margin-right: 15%; margin-top: 4px;
+    font-size: 14px; color: #fff3d6; background: rgba(0,0,0,0.4);
+    padding: 5px 12px; border-radius: 999px; font-family: monospace;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  #nextRomaji { color: #7fff8a; font-weight: 700; letter-spacing: 1px; font-size: 15px; }
+
+  /* ▼ 追加：たおすたびに たまる EXP(けいけんち)バー */
+  #expBarWrap { margin: 0 0 10px; }
+  .expLabel { font-size: 10px; color: #7fff8a; text-align: right; margin-bottom: 3px; font-weight: 700; }
+  .expTrack { height: 9px; border-radius: 6px; background: rgba(0,0,0,0.35); overflow: hidden; border: 1px solid rgba(255,255,255,0.15); }
+  .expFill { height: 100%; width: 0%; background: linear-gradient(90deg, #7fff8a, #00e5ff); transition: width 0.35s ease; }
+  #timerFill { height: 100%; background: linear-gradient(90deg, #ffd23f, #ff2e93); width: 100%; transition: width 0.05s linear; }
+
+  .popup {
+    position: absolute;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 900;
+    font-size: 20px;
+    color: #ffd23f;
+    text-shadow: 0 0 10px #ff2e93;
+    pointer-events: none;
+    animation: floatUp 0.8s ease-out forwards;
+    z-index: 5;
+  }
+  @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(0.8); } 100% { opacity: 0; transform: translateY(-50px) scale(1.3); } }
+
+  /* ▼ 追加：たおしたときの、はでな爆発エフェクト */
+  .burst {
+    position: absolute; top: 50%; left: 50%;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: radial-gradient(circle, #fff, #ffd23f 40%, #ff2e93 70%, transparent 75%);
+    transform: translate(-50%, -50%) scale(0.3);
+    pointer-events: none; z-index: 7;
+    animation: burstPop 0.55s ease-out forwards;
+  }
+  @keyframes burstPop {
+    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+    60% { transform: translate(-50%, -50%) scale(14); opacity: 0.85; }
+    100% { transform: translate(-50%, -50%) scale(20); opacity: 0; }
+  }
+  /* ▼ 追加：キラキラ飛び散るパーティクル */
+  .particle {
+    position: absolute; top: 50%; left: 50%;
+    width: 8px; height: 8px; border-radius: 2px;
+    pointer-events: none; z-index: 8;
+    animation: particleFly 0.7s ease-out forwards;
+  }
+  @keyframes particleFly {
+    0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(var(--px), var(--py)) rotate(var(--pr)) scale(0.2); opacity: 0; }
+  }
+  /* ▼ 追加：画面ぜんたいがパッと光るフラッシュ */
+  .screenFlash {
+    position: absolute; inset: 0; background: #fff;
+    pointer-events: none; z-index: 6; opacity: 0;
+    animation: flashOut 0.35s ease-out forwards;
+  }
+  @keyframes flashOut { 0% { opacity: 0.75; } 100% { opacity: 0; } }
+
+  /* ▼ 追加：ミスしたときの、赤いフラッシュと❌マーク */
+  .missFlash {
+    position: absolute; inset: 0; background: #ff1a1a;
+    pointer-events: none; z-index: 6; opacity: 0;
+    animation: missFlashOut 0.28s ease-out forwards;
+  }
+  @keyframes missFlashOut { 0% { opacity: 0.4; } 100% { opacity: 0; } }
+  .missMark {
+    position: absolute; top: 42%; left: 50%;
+    font-size: 46px; font-weight: 900; color: #ff1a1a;
+    text-shadow: 0 0 10px #fff, 0 0 4px #fff;
+    transform: translate(-50%, -50%) scale(1.4) rotate(-8deg);
+    pointer-events: none; z-index: 9; opacity: 0;
+    animation: missMarkPop 0.35s ease-out forwards;
+  }
+  @keyframes missMarkPop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-8deg); }
+    35% { opacity: 1; transform: translate(-50%, -50%) scale(1.5) rotate(-8deg); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(-8deg); }
+  }
+
+  /* ▼ 追加：ノーミスでたおしつづけたときの「〇コンボ！」フラッシュ */
+  .comboFlash {
+    position: absolute; top: 28%; left: 50%;
+    font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900; font-size: 32px;
+    color: #ffd23f; text-shadow: 0 0 14px #ff2e93, 0 0 6px #fff;
+    pointer-events: none; z-index: 8; opacity: 0;
+    animation: comboFlashPop 0.7s ease-out forwards;
+  }
+  @keyframes comboFlashPop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-6deg); }
+    25% { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(3deg); }
+    60% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9) translateY(-18px); }
+  }
+  /* ▼ 追加：ノーミス3れんぞくでかいふくしたときの、みどりのポップ */
+  /* ▼ 変更：かいふくしたときの、エメラルドグリーンのキラキラパーティクル */
+  .healSparkle {
+    position: absolute; width: 9px; height: 9px; border-radius: 50%;
+    background: radial-gradient(circle, #eafff5 0%, #00e6a8 55%, transparent 75%);
+    box-shadow: 0 0 8px #00e6a8, 0 0 3px #eafff5;
+    pointer-events: none; z-index: 8; opacity: 0;
+    animation: healSparkleFloat 1s ease-out forwards;
+  }
+  @keyframes healSparkleFloat {
+    0% { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(0deg); }
+    18% { opacity: 1; transform: translate(0, 0) scale(1.1) rotate(45deg); }
+    100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.4) rotate(180deg); }
+  }
+
+  #gameControls { margin-top: 14px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .ctrlBtn {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700; font-size: 12px; padding: 8px 14px; border-radius: 999px; border: none;
+    background: rgba(255,255,255,0.1); color: #f4c4e0; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .ctrlBtn:active { transform: scale(0.96); }
+  .ctrlBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #startOverlay, #overOverlay, #shopOverlay, #kujiOverlay, #missionOverlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; background: linear-gradient(160deg, rgba(120,90,10,0.95), rgba(60,45,5,0.95)); z-index: 10; text-align: center;
+    padding: 16px 20px;
+  }
+  #overOverlay { display: none; }
+
+  /* ▼ 追加：やり直すまえの、3・2・1カウントダウン */
+  #countdownOverlay {
+    position: absolute; inset: 0; z-index: 15;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(10,5,20,0.6);
+    font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900;
+    font-size: 90px; color: #ffd23f;
+    text-shadow: 0 0 24px rgba(255,210,63,0.8);
+  }
+  #countdownOverlay.show { display: flex; }
+  #countdownOverlay span { animation: countdownPop 0.6s ease-out; }
+  @keyframes countdownPop {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .bigmsg { font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900; font-size: 22px; color: #ffd23f; margin-bottom: 2px; }
+  /* ▼ 追加：超むずかしいクリア時の、キラキラ金色文字 */
+  .goldClearText {
+    background: linear-gradient(90deg, #ffd23f, #fff6c9, #ffb347, #ffd23f, #fff6c9);
+    background-size: 300% auto;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: goldShine 2.2s linear infinite;
+    text-shadow: none;
+    font-size: 24px;
+  }
+  @keyframes goldShine { to { background-position: 300% center; } }
+  .sectionDivider { width: 70%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); margin: 2px 0; }
+  #shopOverlay {
+    overflow-y: auto;
+    justify-content: flex-start; /* ← 変更：まんなかぞろえだと、はみ出たぶんが見えなくなるバグがあったので上ぞろえに */
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+  #startOverlay {
+    overflow-y: auto;
+    justify-content: flex-start; /* ← 追加：コンテンツがふえてきたので、上ぞろえ＋スクロールできるようにする */
+    padding-top: 16px;
+    padding-bottom: 16px;
+    gap: 6px;
+  }
+  #kujiOverlay { overflow-y: auto; }
+  #missionOverlay { overflow-y: auto; justify-content: flex-start; padding-top: 22px; padding-bottom: 22px; }
+  #missionList { width: 100%; display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+  .achieveCategoryHeader {
+    font-weight: 900; font-size: 12px; text-align: left; width: 100%;
+    padding: 6px 4px 3px 4px; margin-top: 4px;
+    opacity: 0.95;
+  }
+  .achieveItem {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 8px 10px; text-align: left;
+  }
+  .achieveItem.done { background: rgba(127,255,138,0.15); border-color: rgba(127,255,138,0.5); }
+  .achieveIcon { font-size: 24px; flex-shrink: 0; }
+  .achieveInfo { flex: 1; min-width: 0; }
+  .achieveName { font-weight: 900; font-size: 13px; color: #ffd23f; word-break: break-word; }
+  .achieveProgress { font-size: 11px; color: #f4c4e0; margin-top: 2px; word-break: break-word; }
+  .achieveBarTrack { width: 100%; height: 6px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .achieveBarFill { height: 100%; background: linear-gradient(90deg, #7fff8a, #00c9a0); border-radius: 4px; transition: width 0.3s ease; }
+  .achieveClaimBtn {
+    flex-shrink: 0; font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900; font-size: 11px;
+    padding: 8px 10px; border-radius: 999px; border: none; cursor: pointer;
+    background: linear-gradient(90deg, #ffd23f, #ff8a3c); color: #1a0b2e;
+  }
+  .achieveClaimBtn:disabled { background: #555; color: #999; cursor: not-allowed; }
+  .achieveClaimBtn.claimed { background: #3a5a3f; color: #7fff8a; cursor: default; }
+  #kujiBox {
+    font-size: 70px; margin: 10px 0;
+    animation: kujiBoxIdle 2.2s ease-in-out infinite;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  }
+  @keyframes kujiBoxIdle {
+    0%, 100% { transform: rotate(-4deg) scale(1); }
+    50% { transform: rotate(4deg) scale(1.05); }
+  }
+  #kujiBox.opening { animation: kujiBoxOpen 0.8s ease-out; }
+  @keyframes kujiBoxOpen {
+    0% { transform: scale(1) rotate(0deg); }
+    30% { transform: scale(1.3) rotate(-10deg); }
+    60% { transform: scale(1.3) rotate(10deg); }
+    100% { transform: scale(1.5) rotate(0deg); }
+  }
+  #shopItemList { width: 100%; display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+  .shopItem {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 7px 9px; text-align: left;
+  }
+  .shopItem.rare {
+    background: linear-gradient(135deg, rgba(255,210,63,0.18), rgba(0,0,0,0.35));
+    border: 1.5px solid #ffd23f;
+    box-shadow: 0 0 10px rgba(255,210,63,0.45), inset 0 0 8px rgba(255,210,63,0.12);
+  }
+  .shopItem.ultra {
+    background: linear-gradient(135deg, rgba(255,46,147,0.16), rgba(0,0,0,0.4));
+    border: 2px solid transparent;
+    border-image: linear-gradient(90deg, #ff2e93, #ffd23f, #00e5ff, #7fff8a, #ff8a5c, #ff2e93) 1;
+    background-size: 300% auto;
+    animation: ultraBorderShift 3s linear infinite;
+    box-shadow: 0 0 14px rgba(255,46,147,0.5);
+  }
+  .shopItem.legendary {
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(0,0,0,0.45));
+    border: 2.5px solid transparent;
+    border-image: linear-gradient(90deg, #fff6c9, #ffd23f, #ff2e93, #00e5ff, #ffd23f, #fff6c9) 1;
+    background-size: 300% auto;
+    animation: ultraBorderShift 2.2s linear infinite, legendaryPulse 1.6s ease-in-out infinite;
+    box-shadow: 0 0 22px rgba(255,210,63,0.75);
+  }
+  .shopItem.divine {
+    background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,246,201,0.15), rgba(0,0,0,0.45));
+    border: 3px solid #fff6c9;
+    box-shadow: 0 0 10px #fff, 0 0 24px rgba(255,246,201,0.9), 0 0 40px rgba(255,210,63,0.7);
+    animation: divineGlow 1.4s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes divineGlow {
+    0%, 100% { box-shadow: 0 0 10px #fff, 0 0 24px rgba(255,246,201,0.9), 0 0 40px rgba(255,210,63,0.7); }
+    50% { box-shadow: 0 0 18px #fff, 0 0 36px rgba(255,246,201,1), 0 0 60px rgba(255,210,63,0.95); }
+  }
+  .shopItem.godking {
+    background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(160,220,255,0.2), rgba(0,0,0,0.5));
+    border: 3px solid #fff;
+    box-shadow: 0 0 12px #fff, 0 0 28px rgba(170,220,255,0.95), 0 0 50px rgba(255,255,255,0.85), 0 0 70px rgba(120,180,255,0.6);
+    animation: godkingGlow 1s ease-in-out infinite, legendaryPulse 1s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes godkingGlow {
+    0%, 100% { box-shadow: 0 0 12px #fff, 0 0 28px rgba(170,220,255,0.95), 0 0 50px rgba(255,255,255,0.85), 0 0 70px rgba(120,180,255,0.6); }
+    50% { box-shadow: 0 0 24px #fff, 0 0 46px rgba(170,220,255,1), 0 0 75px rgba(255,255,255,1), 0 0 100px rgba(120,180,255,0.9); }
+  }
+  .shopItem.phantom {
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(190,190,220,0.1), rgba(0,0,0,0.55));
+    border: 2.5px dashed rgba(255,255,255,0.75);
+    box-shadow: 0 0 20px rgba(220,220,255,0.5);
+    animation: phantomFlicker 2.6s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes phantomFlicker {
+    0%, 100% { opacity: 0.55; filter: blur(0.3px); box-shadow: 0 0 10px rgba(220,220,255,0.3); }
+    20% { opacity: 1; filter: blur(0); box-shadow: 0 0 26px rgba(220,220,255,0.75); }
+    45% { opacity: 0.7; box-shadow: 0 0 14px rgba(220,220,255,0.4); }
+    70% { opacity: 1; filter: blur(0); box-shadow: 0 0 30px rgba(220,220,255,0.85); }
+    85% { opacity: 0.5; }
+  }
+  @keyframes legendaryPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.015); }
+  }
+  @keyframes ultraBorderShift {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+  }
+  .shopItemIcon { font-size: 22px; flex-shrink: 0; }
+  .shopItem.locked-item { opacity: 0.55; filter: grayscale(0.6); animation: none !important; border-image: none !important; border-color: rgba(255,255,255,0.15) !important; box-shadow: none !important; }
+  .shopItem.locked-item .shopItemName { color: #b8b0c2; }
+  .shopItem.locked-item .shopItemDesc { color: #ffb3b3; }
+  .shopItemInfo { flex: 1; min-width: 0; }
+  .shopItemName { font-weight: 900; font-size: 12px; color: #ffd23f; }
+  .shopItemDesc { font-size: 9.5px; color: #f4c4e0; line-height: 1.3; }
+  .shopItemOwned { font-size: 10px; color: #7fff8a; margin-top: 2px; }
+  .shopBuyBtn {
+    flex-shrink: 0; font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900; font-size: 11px;
+    padding: 8px 10px; border-radius: 999px; border: none; cursor: pointer;
+    background: linear-gradient(90deg, #ffd23f, #ff8a3c); color: #1a0b2e;
+  }
+  .shopBuyBtn:disabled { background: #555; color: #999; cursor: not-allowed; }
+  .shopBtnCol { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .kujiOnlyTag {
+    font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900; font-size: 10px;
+    padding: 6px 8px; border-radius: 999px; text-align: center;
+    background: rgba(255,255,255,0.15); color: #fff3d6; border: 1px dashed rgba(255,255,255,0.5);
+  }
+  .shopEquipBtn {
+    font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900; font-size: 10px;
+    padding: 6px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;
+    background: rgba(255,255,255,0.12); color: #fff;
+  }
+  .shopEquipBtn.equipped { background: linear-gradient(90deg, #7fff8a, #00c9a0); color: #063; border-color: transparent; }
+  .smallmsg { color: #fff3d6; font-size: 13px; line-height: 1.5; }
+  button {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 900; font-size: 16px; padding: 12px 30px; border-radius: 999px; border: none;
+    background: linear-gradient(90deg, #ff2e93, #ffd23f); color: #1a0b2e; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(255,46,147,0.4);
+  }
+  button:active { transform: scale(0.96); }
+  #best { color: #00e5ff; font-weight: 700; }
+
+  .diffRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 8px; margin-top: 2px; }
+  .diffBtn {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 900; font-size: 15px; padding: 11px 6px; border-radius: 14px; border: none;
+    color: #1a0b2e; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    width: 100%; min-width: 0; white-space: nowrap; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    overflow: hidden;
+  }
+  .diffBtn:active { transform: scale(0.96); }
+  .diffBtn.locked { opacity: 0.45; filter: grayscale(0.6); cursor: not-allowed; }
+  .diffBtn.locked:active { transform: none; }
+  #veasyBtn { background: linear-gradient(90deg, #c9f9d8, #7fe0a0); }
+  #easyBtn { background: linear-gradient(90deg, #9df9ff, #00e5ff); }
+  #normalBtn { background: linear-gradient(90deg, #ffd23f, #ffb23f); }
+  #hardBtn { background: linear-gradient(90deg, #ff2e93, #b8005f); color: #fff; }
+  #extremeBtn { background: linear-gradient(90deg, #6b0f1a, #1a0508); color: #ff5c5c; }
+
+  #diffTag {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 999px; background: rgba(255,255,255,0.12); color: #ffd23f; margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="headerRow">
+    <h1>⚔️バトルタイピング⚔️</h1>
+    <button id="muteBtn" title="おんがくのオン・オフ">🔊</button>
+  </div>
+  <div class="subtitle">敵の単語をローマ字でそのまま打ってワンパンKO決めてこ〜💥<span id="diffTag" style="display:none;"></span></div>
+
+  <div id="topbar">
+    <div class="stat"><div class="label">LV</div><div class="value" id="levelVal">1</div></div>
+    <div class="stat"><div class="label">WAVE</div><div class="value" id="waveVal">1</div></div>
+    <div class="stat"><div class="label">SCORE</div><div class="value" id="scoreVal">0</div></div>
+    <div class="stat"><div class="label">COMBO</div><div class="value" id="comboVal">0</div></div>
+  </div>
+  <div id="expBarWrap">
+    <div class="expLabel">⭐EXP <span id="expText">0/50</span></div>
+    <div class="expTrack"><div class="expFill" id="expFill" style="width:0%"></div></div>
+  </div>
+
+  <div id="arena">
+    <div id="arenaClouds"></div>
+    <div id="arenaHaze"></div>
+    <div id="arenaGroundTexture"></div>
+    <div id="countdownOverlay"></div>
+    <div id="enemyBarWrap">
+      <span id="enemyName"></span>
+      <div class="barTrack"><div class="barFill" id="enemyFill" style="width:100%"></div></div>
+    </div>
+
+    <div id="enemySprite">👾</div>
+    <div id="wordBubble"><div class="kana">word</div><div class="romaji">word</div></div>
+    <div id="timerTrack"><div id="timerFill"></div></div>
+    <div id="nextPreview" style="display:none;">つぎ：<span id="nextRomaji"></span></div>
+
+    <div id="playerBarWrap">
+      <span>💗HP<span id="hpMax" style="font-size:10px; opacity:0.8;">/150</span></span>
+      <div class="barTrack"><div class="barFill" id="playerFill" style="width:100%"></div></div>
+    </div>
+
+    <div id="startOverlay">
+      <div class="smallmsg">「ひらがな」を見て、下のローマ字を<b>そのまま打つ</b>だけ！<br>間に合わないとHPがへっちゃうよ〜</div>
+      <div class="smallmsg" id="bestDisplay">ベストスコア：<span id="best">--</span>　🪙<span id="coinDisplay">0</span></div>
+      <div style="display:flex; gap:6px; width:100%;">
+        <button class="ctrlBtn" id="openShopBtn" style="flex:1; margin-bottom:2px;">🛒 ショップ</button>
+        <button class="ctrlBtn" id="openKujiBtn" style="flex:1; margin-bottom:2px;">🎫 くじ（1日1回）</button>
+        <button class="ctrlBtn" id="openMissionBtn" style="flex:1; margin-bottom:2px;">🎯 ミッション</button>
+      </div>
+      <div class="sectionDivider"></div>
+      <div class="smallmsg">むずかしさをえらんでね👇</div>
+      <div class="diffRow">
+        <button class="diffBtn" id="veasyBtn">超かんたん</button>
+        <button class="diffBtn" id="easyBtn">かんたん</button>
+        <button class="diffBtn" id="normalBtn">ふつう</button>
+        <button class="diffBtn locked" id="hardBtn">🔒むずかしい</button>
+        <button class="diffBtn locked" id="extremeBtn" style="grid-column: 1 / 3;">🔒超むずかしい</button>
+      </div>
+    </div>
+    <div id="overOverlay">
+      <div class="bigmsg" id="resultTitle">バトル終了〜！</div>
+      <div class="smallmsg" id="resultDetail"></div>
+      <button id="retryBtn">リベンジする💪</button>
+      <div class="smallmsg">（スペースキーでもリスタートできるよ）</div>
+    </div>
+    <div id="shopOverlay" style="display:none;">
+      <div class="bigmsg" style="font-size:18px;">🛒 アイテムショップ</div>
+      <div class="smallmsg" style="opacity:0.8;">買ったアイテムは、つぎの戦闘でつかわれるよ</div>
+      <div id="shopSaleBanner" class="smallmsg" style="color:#ff2e93; font-weight:900;"></div>
+      <div class="smallmsg">🪙コイン：<span id="shopCoinDisplay">0</span></div>
+      <div id="shopItemList"></div>
+      <button class="ctrlBtn" id="closeShopBtn">← もどる</button>
+    </div>
+    <div id="kujiOverlay" style="display:none;">
+      <div class="bigmsg" style="font-size:18px;">🎫 まいにちくじ</div>
+      <div class="smallmsg" style="opacity:0.85;">1日1回、むりょうでアイテムがあたるよ</div>
+      <div class="smallmsg" style="opacity:0.85;">🎫チケット：<span id="kujiTicketDisplay">0</span>まい　🔮うんき：<span id="divineLuckTicketDisplay">0</span>まい</div>
+      <div id="kujiBox">🎁</div>
+      <button class="ctrlBtn" id="drawKujiBtn">🎫 くじをひく</button>
+      <button class="ctrlBtn" id="drawKujiDivineBtn">🔮 うんきチケットがない</button>
+      <div id="kujiResult" class="smallmsg" style="min-height: 40px;"></div>
+      <button class="ctrlBtn" id="closeKujiBtn">← もどる</button>
+    </div>
+    <div id="missionOverlay" style="display:none;">
+      <div class="bigmsg" style="font-size:18px;">🎯 たっせいミッション</div>
+      <div class="smallmsg" style="opacity:0.85;">一生に一回だけの目標だよ。一度たっせいすればずっとのこるよ</div>
+      <div id="missionList"></div>
+      <button class="ctrlBtn" id="closeMissionBtn">← もどる</button>
+    </div>
+  </div>
+
+  <div id="gameControls" style="display:none;">
+    <button class="ctrlBtn" id="restartBtn">🔄 最初からやり直す</button>
+    <button class="ctrlBtn" id="backToMenuBtn">📋 難易度選択に戻る</button>
+  </div>
+</div>
+
+<script>
+const NORMAL_WORDS = [
+  { kana: "がんばる", romaji: "ganbaru" },
+  { kana: "たのしい", romaji: "tanoshii" },
+  { kana: "きらきら", romaji: "kirakira" },
+  { kana: "えがお", romaji: "egao" },
+  { kana: "ゆうき", romaji: "yuuki" },
+  { kana: "やったね", romaji: "yattane" },
+  { kana: "すごいね", romaji: "sugoine" },
+  { kana: "にこにこ", romaji: "nikoniko" },
+  { kana: "げんき", romaji: "genki" },
+  { kana: "のびのび", romaji: "nobinobi" },
+  { kana: "わくわく", romaji: "wakuwaku" },
+  { kana: "どきどき", romaji: "dokidoki" },
+  { kana: "ほしぞら", romaji: "hoshizora" },
+  { kana: "あさひ", romaji: "asahi" },
+  { kana: "ともだち", romaji: "tomodati" },
+  { kana: "がっこう", romaji: "gakkou" },
+  { kana: "おうえん", romaji: "ouen" },
+  { kana: "たいせつ", romaji: "taisetsu" },
+  { kana: "にじいろ", romaji: "nijiiro" },
+  { kana: "ふわふわ", romaji: "fuwafuwa" },
+  { kana: "ぴかぴか", romaji: "pikapika" },
+  { kana: "あおぞら", romaji: "aozora" },
+  { kana: "おひさま", romaji: "ohisama" },
+  { kana: "しあわせ", romaji: "shiawase" },
+  { kana: "やさしさ", romaji: "yasashisa" },
+  { kana: "はなたば", romaji: "hanataba" },
+  { kana: "おんがく", romaji: "ongaku" },
+  { kana: "たからもの", romaji: "takaramono" },
+  { kana: "おいしい", romaji: "oishii" },
+  { kana: "ぼうけん", romaji: "bouken" },
+  { kana: "あめふり", romaji: "amefuri" },
+  { kana: "ゆきだるま", romaji: "yukidaruma" },
+  { kana: "ほんばこ", romaji: "honbako" },
+  { kana: "とけい", romaji: "tokei" },
+  { kana: "でんしゃ", romaji: "densha" },
+  { kana: "こうえん", romaji: "kouen" },
+  { kana: "すいえい", romaji: "suiei" },
+  { kana: "やきゅう", romaji: "yakyuu" },
+  { kana: "サッカー", romaji: "sakka-" },
+  { kana: "えんそく", romaji: "ensoku" },
+  { kana: "きゅうしょく", romaji: "kyuushoku" },
+  { kana: "としょかん", romaji: "toshokan" },
+  { kana: "せんせい", romaji: "sensei" },
+  { kana: "くらすめいと", romaji: "kurasumeito" },
+  { kana: "なつやすみ", romaji: "natsuyasumi" },
+  { kana: "たんじょうび", romaji: "tanjoubi" },
+  { kana: "ぷれぜんと", romaji: "purezento" },
+  { kana: "ほしくず", romaji: "hoshikuzu" },
+  { kana: "つきみ", romaji: "tsukimi" },
+  { kana: "はなび", romaji: "hanabi" },
+  { kana: "うちゅう", romaji: "uchuu" },
+  { kana: "みらいず", romaji: "miraizu" },
+  { kana: "いぬ", romaji: "inu" },
+  { kana: "ねこ", romaji: "neko" },
+  { kana: "うさぎ", romaji: "usagi" },
+  { kana: "ぞう", romaji: "zou" },
+  { kana: "きりん", romaji: "kirin" },
+  { kana: "ぱんだ", romaji: "panda" },
+  { kana: "くま", romaji: "kuma" },
+  { kana: "とら", romaji: "tora" },
+  { kana: "らいおん", romaji: "raion" },
+  { kana: "さる", romaji: "saru" },
+  { kana: "うま", romaji: "uma" },
+  { kana: "ひつじ", romaji: "hitsuji" },
+  { kana: "ぶた", romaji: "buta" },
+  { kana: "とり", romaji: "tori" },
+  { kana: "さかな", romaji: "sakana" },
+  { kana: "かめ", romaji: "kame" },
+  { kana: "へび", romaji: "hebi" },
+  { kana: "かえる", romaji: "kaeru" },
+  { kana: "ちょう", romaji: "chou" },
+  { kana: "みつばち", romaji: "mitsubachi" },
+  { kana: "あか", romaji: "aka" },
+  { kana: "あお", romaji: "ao" },
+  { kana: "きいろ", romaji: "kiiro" },
+  { kana: "みどり", romaji: "midori" },
+  { kana: "しろ", romaji: "shiro" },
+  { kana: "くろ", romaji: "kuro" },
+  { kana: "ちゃいろ", romaji: "chairo" },
+  { kana: "むらさき", romaji: "murasaki" },
+  { kana: "りんご", romaji: "ringo" },
+  { kana: "みかん", romaji: "mikan" },
+  { kana: "ばなな", romaji: "banana" },
+  { kana: "いちご", romaji: "ichigo" },
+  { kana: "ぶどう", romaji: "budou" },
+  { kana: "すいか", romaji: "suika" },
+  { kana: "めろん", romaji: "meron" },
+  { kana: "とまと", romaji: "tomato" },
+  { kana: "にんじん", romaji: "ninjin" },
+  { kana: "じゃがいも", romaji: "jagaimo" },
+  { kana: "たまねぎ", romaji: "tamanegi" },
+  { kana: "パン", romaji: "pan" },
+  { kana: "ごはん", romaji: "gohan" },
+  { kana: "ラーメン", romaji: "ra-men" },
+  { kana: "カレー", romaji: "kare-" },
+  { kana: "すし", romaji: "sushi" },
+  { kana: "ケーキ", romaji: "ke-ki" },
+  { kana: "あいす", romaji: "aisu" },
+  { kana: "チョコレート", romaji: "chokore-to" },
+  { kana: "クッキー", romaji: "kukki-" },
+  { kana: "あたま", romaji: "atama" },
+  { kana: "あし", romaji: "ashi" },
+  { kana: "くち", romaji: "kuchi" },
+  { kana: "みみ", romaji: "mimi" },
+  { kana: "はな", romaji: "hana" },
+  { kana: "かお", romaji: "kao" },
+  { kana: "おかあさん", romaji: "okaasan" },
+  { kana: "おとうさん", romaji: "otousan" },
+  { kana: "おにいさん", romaji: "oniisan" },
+  { kana: "おねえさん", romaji: "oneesan" },
+  { kana: "おじいさん", romaji: "ojiisan" },
+  { kana: "おばあさん", romaji: "obaasan" },
+  { kana: "はる", romaji: "haru" },
+  { kana: "なつ", romaji: "natsu" },
+  { kana: "あき", romaji: "aki" },
+  { kana: "ふゆ", romaji: "fuyu" },
+  { kana: "あめ", romaji: "ame" },
+  { kana: "ゆき", romaji: "yuki" },
+  { kana: "かぜ", romaji: "kaze" },
+  { kana: "たいよう", romaji: "taiyou" },
+  { kana: "つき", romaji: "tsuki" },
+  { kana: "ほし", romaji: "hoshi" },
+  { kana: "くも", romaji: "kumo" },
+  { kana: "きょうしつ", romaji: "kyoushitsu" },
+  { kana: "こくばん", romaji: "kokuban" },
+  { kana: "えんぴつ", romaji: "enpitsu" },
+  { kana: "けしごむ", romaji: "keshigomu" },
+  { kana: "ノート", romaji: "no-to" },
+  { kana: "つくえ", romaji: "tsukue" },
+  { kana: "いす", romaji: "isu" },
+  { kana: "かばん", romaji: "kaban" },
+  { kana: "じかんわり", romaji: "jikanwari" },
+  { kana: "しゅくだい", romaji: "shukudai" },
+  { kana: "テニス", romaji: "tenisu" },
+  { kana: "バスケット", romaji: "basuketto" },
+  { kana: "マラソン", romaji: "marason" },
+  { kana: "じてんしゃ", romaji: "jitensha" },
+  { kana: "やま", romaji: "yama" },
+  { kana: "かわ", romaji: "kawa" },
+  { kana: "うみ", romaji: "umi" },
+  { kana: "もり", romaji: "mori" },
+  { kana: "はやし", romaji: "hayashi" },
+  { kana: "いわ", romaji: "iwa" },
+  { kana: "すな", romaji: "suna" },
+  { kana: "みずうみ", romaji: "mizuumi" },
+  { kana: "あさ", romaji: "asa" },
+  { kana: "ひる", romaji: "hiru" },
+  { kana: "よる", romaji: "yoru" },
+  { kana: "きのう", romaji: "kinou" },
+  { kana: "きょう", romaji: "kyou" },
+  { kana: "あした", romaji: "ashita" },
+  { kana: "いま", romaji: "ima" },
+  { kana: "おおきい", romaji: "ookii" },
+  { kana: "ちいさい", romaji: "chiisai" },
+  { kana: "はやい", romaji: "hayai" },
+  { kana: "おそい", romaji: "osoi" },
+  { kana: "つよい", romaji: "tsuyoi" },
+  { kana: "やさしい", romaji: "yasashii" },
+  { kana: "あかるい", romaji: "akarui" },
+  { kana: "くらい", romaji: "kurai" },
+  { kana: "あたたかい", romaji: "atatakai" },
+  { kana: "つめたい", romaji: "tsumetai" },
+  { kana: "じどうしゃ", romaji: "jidousha" },
+  { kana: "ひこうき", romaji: "hikouki" },
+  { kana: "ふね", romaji: "fune" },
+  { kana: "バス", romaji: "basu" },
+  { kana: "タクシー", romaji: "takushi-" },
+  { kana: "かなしい", romaji: "kanashii" },
+  { kana: "きれい", romaji: "kirei" },
+  { kana: "すごい", romaji: "sugoi" },
+  { kana: "わらう", romaji: "warau" },
+  { kana: "あるく", romaji: "aruku" },
+  { kana: "はしる", romaji: "hashiru" },
+  { kana: "とぶ", romaji: "tobu" },
+  { kana: "およぐ", romaji: "oyogu" },
+  { kana: "たべる", romaji: "taberu" },
+  { kana: "のむ", romaji: "nomu" },
+  { kana: "ねる", romaji: "neru" },
+  { kana: "おきる", romaji: "okiru" },
+  { kana: "あそぶ", romaji: "asobu" },
+  { kana: "ほん", romaji: "hon" },
+  { kana: "えほん", romaji: "ehon" },
+  { kana: "まんが", romaji: "manga" },
+  { kana: "てがみ", romaji: "tegami" },
+  { kana: "にっき", romaji: "nikki" },
+  { kana: "ゆめ", romaji: "yume" },
+  { kana: "がっき", romaji: "gakki" },
+  { kana: "いえ", romaji: "ie" },
+  { kana: "にわ", romaji: "niwa" },
+  { kana: "まど", romaji: "mado" },
+  { kana: "へや", romaji: "heya" },
+  { kana: "かぎ", romaji: "kagi" },
+  { kana: "はこ", romaji: "hako" },
+  { kana: "おはよう", romaji: "ohayou" },
+  { kana: "こんにちは", romaji: "konnichiwa" },
+  { kana: "こんばんは", romaji: "konbanwa" },
+  { kana: "ありがとう", romaji: "arigatou" },
+  { kana: "ごめんね", romaji: "gomenne" },
+  { kana: "またね", romaji: "matane" },
+  { kana: "いってきます", romaji: "ittekimasu" },
+  { kana: "ただいま", romaji: "tadaima" },
+  { kana: "おやすみ", romaji: "oyasumi" },
+  { kana: "くつ", romaji: "kutsu" },
+  { kana: "ぼうし", romaji: "boushi" },
+  { kana: "てぶくろ", romaji: "tebukuro" },
+  { kana: "かさ", romaji: "kasa" },
+  { kana: "めがね", romaji: "megane" },
+  { kana: "ふく", romaji: "fuku" },
+  { kana: "ズボン", romaji: "zubon" },
+  { kana: "スカート", romaji: "suka-to" },
+  { kana: "くじら", romaji: "kujira" },
+  { kana: "いるか", romaji: "iruka" },
+  { kana: "ペンギン", romaji: "pengin" },
+  { kana: "ふくろう", romaji: "fukurou" },
+  { kana: "りす", romaji: "risu" },
+  { kana: "たぬき", romaji: "tanuki" },
+  { kana: "きつね", romaji: "kitsune" },
+  { kana: "おにぎり", romaji: "onigiri" },
+  { kana: "みそしる", romaji: "misoshiru" },
+  { kana: "たまごやき", romaji: "tamagoyaki" },
+  { kana: "からあげ", romaji: "karaage" },
+  { kana: "ぎょうざ", romaji: "gyouza" },
+  { kana: "プリン", romaji: "purin" },
+  { kana: "まる", romaji: "maru" },
+  { kana: "さんかく", romaji: "sankaku" },
+  { kana: "しかく", romaji: "shikaku" },
+  { kana: "ハート", romaji: "ha-to" },
+  { kana: "なに", romaji: "nani" },
+  { kana: "だれ", romaji: "dare" },
+  { kana: "どこ", romaji: "doko" },
+  { kana: "いつ", romaji: "itsu" },
+  { kana: "なぜ", romaji: "naze" },
+  { kana: "どうして", romaji: "doushite" },
+  { kana: "たんじょうびかい", romaji: "tanjoubikai" },
+  { kana: "がっこうにいく", romaji: "gakkouniiku" },
+  { kana: "おいしいごはん", romaji: "oishiigohan" },
+  { kana: "ゆうえんちにいく", romaji: "yuuenchiniiku" },
+  { kana: "どうぶつえんたんけん", romaji: "doubutsuentanken" },
+  { kana: "としょかんでほんをよむ", romaji: "toshokandehonwoyomu" },
+  { kana: "きゅうしょくがだいすき", romaji: "kyuushokugadaisuki" },
+  { kana: "うんどうかいでがんばる", romaji: "undoukaideganbaru" },
+  { kana: "なつやすみのおもいで", romaji: "natsuyasuminoomoide" },
+  { kana: "ともだちとあそぶ", romaji: "tomodachitoasobu" },
+  { kana: "あさごはんをたべる", romaji: "asagohanwotaberu" },
+  { kana: "よるおそくまでおきてる", romaji: "yoruosokumadeokiteru" },
+  { kana: "あめのひのさんぽ", romaji: "amenohinosanpo" },
+  { kana: "ふゆのあさはさむい", romaji: "fuyunoasahasamui" },
+  { kana: "なつのよるはあつい", romaji: "natsunoyoruhaatsui" },
+  { kana: "がっこうのともだち", romaji: "gakkounotomodachi" },
+  { kana: "こうえんであそぼう", romaji: "kouendeasobou" },
+  { kana: "でんしゃにのって", romaji: "denshaninotte" },
+  { kana: "じてんしゃでいく", romaji: "jitenshadeiku" },
+  { kana: "ほんをよむのがすき", romaji: "honwoyomunogasuki" },
+  { kana: "いっせきにちょう", romaji: "issekinichou" },
+  { kana: "しちてんはっき", romaji: "shichitenhakki" },
+  { kana: "いちごいちえ", romaji: "ichigoichie" },
+  { kana: "おんこちしん", romaji: "onkochishin" },
+  { kana: "いんがおうほう", romaji: "ingaouhou" },
+  { kana: "じごうじとく", romaji: "jigoujitoku" },
+  { kana: "じゅうにんといろ", romaji: "juunintoiro" },
+  { kana: "たいきばんせい", romaji: "taikibansei" },
+  { kana: "かんぜんむけつ", romaji: "kanzenmuketsu" },
+  { kana: "くうぜんぜつご", romaji: "kuuzenzetsugo" },
+  { kana: "せんざいいちぐう", romaji: "senzaiichiguu" },
+  { kana: "しんらばんしょう", romaji: "shinrabanshou" },
+  { kana: "かちょうふうげつ", romaji: "kachoufuugetsu" },
+  { kana: "しつじつごうけん", romaji: "shitsujitsugouken" },
+  { kana: "でんこうせっか", romaji: "denkousekka" },
+  { kana: "ゆうげんじっこう", romaji: "yuugenjikkou" },
+  { kana: "きしょうてんけつ", romaji: "kishoutenketsu" },
+  { kana: "てきざいてきしょ", romaji: "tekizaitekisho" },
+  { kana: "いっちょういったん", romaji: "icchouittan" },
+  { kana: "ににんさんきゃく", romaji: "nininsankyaku" },
+  { kana: "だいどうしょうい", romaji: "daidoushoui" },
+  { kana: "はんしんはんぎ", romaji: "hanshinhangi" },
+  { kana: "ゆだんたいてき", romaji: "yudantaiteki" },
+  { kana: "いっしんふらん", romaji: "isshinfuran" },
+  { kana: "りんきおうへん", romaji: "rinkiouhen" },
+  { kana: "さるもきからおちる", romaji: "sarumokikaraochiru" },
+  { kana: "はなよりだんご", romaji: "hanayoridango" },
+  { kana: "いしのうえにもさんねん", romaji: "ishinouenimosannen" },
+  { kana: "ななころびやおき", romaji: "nanakorobiyaoki" },
+  { kana: "ちりもつもればやまとなる", romaji: "chirimotsumorebayamatonaru" },
+  { kana: "にとをおうものはいっとをもえず", romaji: "nitowooumonohaittowomoezu" },
+  { kana: "こういんやのごとし", romaji: "kouinyanogotoshi" },
+  { kana: "けいぞくはちからなり", romaji: "keizokuhachikaranari" },
+  { kana: "いのなかのかわず", romaji: "inonakanokawazu" },
+  { kana: "まかぬたねははえぬ", romaji: "makanutanehahaenu" },
+  { kana: "はやおきはさんもんのとく", romaji: "hayaokihasanmonnotoku" },
+  { kana: "いぬもあるけばぼうにあたる", romaji: "inumoarukebabouniataru" },
+  { kana: "ねこにこばん", romaji: "nekonikoban" },
+  { kana: "いしばしをたたいてわたる", romaji: "ishibashiwotataitewataru" },
+  { kana: "さんにんよればもんじゅのちえ", romaji: "sanninyorebamonjunochie" },
+  { kana: "とうだいもとくらし", romaji: "toudaimotokurashi" },
+  { kana: "まてばかいろのひよりあり", romaji: "matebakaironohiyoriari" },
+  { kana: "きをみてもりをみず", romaji: "kiwomitemoriwomizu" },
+  { kana: "ころばぬさきのつえ", romaji: "korobanusakinotsue" },
+  { kana: "せんりのみちもいっぽから", romaji: "senrinomichimoipporakara" },
+  { kana: "すきこそもののじょうずなれ", romaji: "sukikosomononojouzunare" },
+  { kana: "でるくいはうたれる", romaji: "derukuihautareru" },
+  { kana: "あんずるよりうむがやすし", romaji: "anzuruyoriumugayasushi" },
+  { kana: "あめふってじかたまる", romaji: "amefuttejikatamaru" },
+  { kana: "さいおうがうま", romaji: "saiougauma" },
+  { kana: "むし", romaji: "mushi" },
+  { kana: "とし", romaji: "toshi" },
+  { kana: "いろ", romaji: "iro" },
+  { kana: "かず", romaji: "kazu" },
+  { kana: "なみ", romaji: "nami" },
+  { kana: "うた", romaji: "uta" },
+  { kana: "くさ", romaji: "kusa" },
+  { kana: "いし", romaji: "ishi" },
+  { kana: "もも", romaji: "momo" },
+  { kana: "うめ", romaji: "ume" },
+  { kana: "くり", romaji: "kuri" },
+  { kana: "まめ", romaji: "mame" },
+  { kana: "こめ", romaji: "kome" },
+  { kana: "さけ", romaji: "sake" },
+  { kana: "にく", romaji: "niku" },
+  { kana: "たま", romaji: "tama" },
+  { kana: "つの", romaji: "tsuno" },
+  { kana: "はね", romaji: "hane" },
+  { kana: "くび", romaji: "kubi" },
+  { kana: "ひざ", romaji: "hiza" },
+  { kana: "むかし", romaji: "mukashi" },
+  { kana: "やさい", romaji: "yasai" },
+  { kana: "すもも", romaji: "sumomo" },
+  { kana: "ほのお", romaji: "honoo" },
+  { kana: "けむり", romaji: "kemuri" },
+  { kana: "こおり", romaji: "koori" },
+  { kana: "つばさ", romaji: "tsubasa" },
+  { kana: "からだ", romaji: "karada" },
+  { kana: "みさき", romaji: "misaki" },
+  { kana: "はたけ", romaji: "hatake" },
+  { kana: "おかし", romaji: "okashi" },
+  { kana: "えいが", romaji: "eiga" },
+  { kana: "たいこ", romaji: "taiko" },
+  { kana: "おどり", romaji: "odori" },
+  { kana: "きせつ", romaji: "kisetsu" },
+  { kana: "じしん", romaji: "jishin" },
+  { kana: "きけん", romaji: "kiken" },
+  { kana: "おふろ", romaji: "ofuro" },
+  { kana: "でんわ", romaji: "denwa" },
+  { kana: "でんき", romaji: "denki" },
+  { kana: "くだもの", romaji: "kudamono" },
+  { kana: "きゅうり", romaji: "kyuuri" },
+  { kana: "たけのこ", romaji: "takenoko" },
+  { kana: "かぼちゃ", romaji: "kabocha" },
+  { kana: "かみなり", romaji: "kaminari" },
+  { kana: "うんてん", romaji: "unten" },
+  { kana: "りょこう", romaji: "ryokou" },
+  { kana: "かいがい", romaji: "kaigai" },
+  { kana: "がいこく", romaji: "gaikoku" },
+  { kana: "たいふう", romaji: "taifuu" },
+  { kana: "あんぜん", romaji: "anzen" },
+  { kana: "げんかん", romaji: "genkan" },
+  { kana: "うんどう", romaji: "undou" },
+  { kana: "かんぱい", romaji: "kanpai" },
+  { kana: "たいせい", romaji: "taisei" },
+  { kana: "ばんごう", romaji: "bangou" },
+  { kana: "けいかく", romaji: "keikaku" },
+  { kana: "がんばれ", romaji: "ganbare" },
+  { kana: "たいかい", romaji: "taikai" },
+  { kana: "せんしゅ", romaji: "senshu" },
+  { kana: "さくらんぼ", romaji: "sakuranbo" },
+  { kana: "だいどころ", romaji: "daidokoro" },
+  { kana: "れいぞうこ", romaji: "reizouko" },
+  { kana: "もくひょう", romaji: "mokuhyou" },
+  { kana: "おべんとう", romaji: "obentou" },
+  { kana: "ゆうえんち", romaji: "yuuenchi" },
+  { kana: "おとしだま", romaji: "otoshidama" },
+  { kana: "たからばこ", romaji: "takarabako" },
+  { kana: "かたつむり", romaji: "katatsumuri" },
+  { kana: "ふゆやすみ", romaji: "fuyuyasumi" },
+  { kana: "はるやすみ", romaji: "haruyasumi" },
+  { kana: "みずたまり", romaji: "mizutamari" },
+  { kana: "おともだち", romaji: "otomodachi" },
+  { kana: "かがみもち", romaji: "kagamimochi" },
+  { kana: "ひなまつり", romaji: "hinamatsuri" },
+  { kana: "なつまつり", romaji: "natsumatsuri" },
+  { kana: "めだまやき", romaji: "medamayaki" },
+  { kana: "おかいもの", romaji: "okaimono" },
+  { kana: "やおやさん", romaji: "yaoyasan" },
+  { kana: "ぱんやさん", romaji: "panyasan" }
+];
+const BOSS_WORDS = [
+  { kana: "あきらめない", romaji: "akiramenai" },
+  { kana: "ぜんりょくとうきゅう", romaji: "zenryokutoukyuu" },
+  { kana: "こころのなかま", romaji: "kokorononakama" },
+  { kana: "みらいへむかって", romaji: "miraihemukatte" },
+  { kana: "ちからをあわせる", romaji: "tikarawoawaseru" },
+  { kana: "ゆめはかなう", romaji: "yumehakanau" },
+  { kana: "きぼうのひかり", romaji: "kibounohikari" },
+  { kana: "たいへんよくできました", romaji: "taihenyokudekimashita" },
+  { kana: "しんじるちから", romaji: "shinjirutikara" },
+  { kana: "えがおでゆこう", romaji: "egaodeyukou" },
+  { kana: "じぶんをしんじて", romaji: "jibunwoshinjite" },
+  { kana: "れんしゅうのせいか", romaji: "renshuunoseika" },
+  { kana: "ゆうきをだして", romaji: "yuukiwodashite" }
+];
+const LASTBOSS_WORDS = [
+  { kana: "ぜったいあきらめないぞよありがとうよ", romaji: "zettaiakiramenaizoyoarigatouyo" },
+  { kana: "みんなでごうかくするぞありがとうよ", romaji: "minnadegoukakusuruzoarigatouyo" },
+  { kana: "おうえんしてくれてありがとう", romaji: "ouenshitekuretearigatou" }
+];
+let FINAL_WAVE = 50; // ← 変更：超むずかしいのときだけ60にするので、letにした
+const FINAL_WORDS = [
+  { kana: "がんばってよかった", romaji: "ganbatteyokatta" },
+  { kana: "きみのかちだ", romaji: "kiminokachida" },
+  { kana: "さいごまであきらめないで", romaji: "saigomadeakiramenaide" }
+];
+let finalHitsRequired = 2; // ← 変更：さいごのてきをたおす回数(むずかしさでかわる)
+let finalHitsLeft = finalHitsRequired;
+let bossHitsRequired = 1; // ← 追加：だいまおうドラゴンをたおす回数(むずかしさでかわる)
+let bossHitsLeft = 1;
+let bossWaveTracker = -1; // ← 追加：今のボスが「あたらしいボス」かをみわけるための目印
+let boss2HitsLeft = 1; // ← 追加：あたらしい「ボス」(10の倍数のウェーブ)をたおす回数
+let boss2WaveTracker = -1; // ← 追加：今のボス2が「あたらしいボス」かをみわけるための目印
+let midBossHitsLeft = 1; // ← 追加：「中ボス」(25の倍数のウェーブ)をたおす回数
+let midBossWaveTracker = -1; // ← 追加：今の中ボスが「あたらしい中ボス」かをみわけるための目印
+// ▼▼▼ ここが直したところ：絵文字1コじゃなくて「からだ・め・つの」がある絵にしたよ ▼▼▼
+// buildMonster()が、色やつの・つばさの「せってい」から、
+// SVG(せんと色でかいた絵)を組み立ててくれる関数だよ。
+function buildMonster(cfg) {
+  const body = cfg.body, belly = cfg.belly || '#ffffff', eyeColor = cfg.eyeColor || '#1a0b2e';
+  const shape = cfg.shape || 'round';
+  let s = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">';
+  if (cfg.wings) {
+    s += `<path d="M18,55 Q0,34 9,13 Q29,24 30,50 Z" fill="${body}" opacity="0.9"/>`;
+    s += `<path d="M82,55 Q100,34 91,13 Q71,24 70,50 Z" fill="${body}" opacity="0.9"/>`;
+  }
+  if (cfg.tail) {
+    s += `<path d="M76,76 Q96,82 90,58 Q84,68 76,68 Z" fill="${body}"/>`;
+  }
+  if (cfg.scythe) {
+    // ▼ 追加：死神がもつ「大がま」
+    s += `<line x1="16" y1="98" x2="34" y2="18" stroke="#2a2a30" stroke-width="4.5" stroke-linecap="round"/>`;
+    s += `<path d="M34,18 Q4,6 2,34 Q22,34 34,18 Z" fill="#d8d8e2" stroke="#9a9aa8" stroke-width="1.5"/>`;
+  }
+  const floaty = (shape === 'ghost' || shape === 'cloud' || shape === 'slime');
+  if (cfg.tentacles) {
+    s += `<path d="M32,86 Q22,98 30,104" stroke="${body}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+    s += `<path d="M44,90 Q40,103 48,106" stroke="${body}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+    s += `<path d="M56,90 Q60,103 52,106" stroke="${body}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+    s += `<path d="M68,86 Q78,98 70,104" stroke="${body}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  } else if (!floaty) {
+    s += `<ellipse cx="38" cy="91" rx="10" ry="6" fill="${body}"/><ellipse cx="62" cy="91" rx="10" ry="6" fill="${body}"/>`;
+    if (cfg.claws) {
+      s += `<path d="M27,96 L21,106 L37,98 Z" fill="#000"/><path d="M43,96 L48,106 L33,98 Z" fill="#000"/>`;
+      s += `<path d="M51,96 L45,106 L61,98 Z" fill="#000"/><path d="M67,96 L72,106 L57,98 Z" fill="#000"/>`;
+    }
+  }
+  // ▼ からだの「形」ごとに、ちがうシルエットで描く
+  let eyeY = 52, mouthY = 76, browY = 38;
+  switch (shape) {
+    case 'ghost':
+      s += `<path d="M17,58 Q17,15 50,15 Q83,15 83,58 L83,90 Q77,81 71,90 Q65,81 59,90 Q53,81 47,90 Q41,81 35,90 Q29,81 23,90 L17,90 Z" fill="${body}"/>`;
+      eyeY = 48; mouthY = 66; browY = 36;
+      break;
+    case 'slime':
+      s += `<path d="M18,88 Q6,54 33,32 Q50,16 67,32 Q94,54 82,88 Q66,98 50,98 Q34,98 18,88 Z" fill="${body}"/>`;
+      s += `<ellipse cx="50" cy="80" rx="14" ry="10" fill="${belly}" opacity="0.55"/>`;
+      eyeY = 60; mouthY = 82; browY = 46;
+      break;
+    case 'cloud':
+      s += `<ellipse cx="27" cy="58" rx="17" ry="15" fill="${body}"/><ellipse cx="73" cy="58" rx="17" ry="15" fill="${body}"/><ellipse cx="50" cy="42" rx="23" ry="20" fill="${body}"/><ellipse cx="50" cy="66" rx="30" ry="19" fill="${body}"/>`;
+      s += `<ellipse cx="50" cy="72" rx="16" ry="9" fill="${belly}" opacity="0.5"/>`;
+      eyeY = 55; mouthY = 76; browY = 41;
+      break;
+    case 'tall':
+      s += `<ellipse cx="50" cy="55" rx="24" ry="37" fill="${body}"/>`;
+      s += `<ellipse cx="50" cy="72" rx="13" ry="19" fill="${belly}" opacity="0.55"/>`;
+      eyeY = 46; mouthY = 74; browY = 32;
+      break;
+    case 'wide':
+      s += `<ellipse cx="50" cy="62" rx="41" ry="25" fill="${body}"/>`;
+      s += `<ellipse cx="50" cy="68" rx="22" ry="11" fill="${belly}" opacity="0.55"/>`;
+      eyeY = 58; mouthY = 78; browY = 44;
+      break;
+    default:
+      s += `<ellipse cx="50" cy="58" rx="33" ry="30" fill="${body}"/>`;
+      s += `<ellipse cx="50" cy="70" rx="17" ry="13" fill="${belly}" opacity="0.55"/>`;
+  }
+  if (cfg.scars) {
+    s += `<path d="M26,${eyeY - 14} L38,${eyeY + 14}" stroke="#000" stroke-width="2.6" stroke-linecap="round" opacity="0.65"/>`;
+    s += `<path d="M32,${eyeY - 11} L44,${eyeY + 17}" stroke="#000" stroke-width="2.6" stroke-linecap="round" opacity="0.65"/>`;
+    s += `<path d="M38,${eyeY - 8} L50,${eyeY + 20}" stroke="#000" stroke-width="2.6" stroke-linecap="round" opacity="0.65"/>`;
+  }
+  if (cfg.spikes) {
+    s += `<path d="M18,40 L24,10 L32,42 Z" fill="${body}"/><path d="M33,31 L39,2 L47,31 Z" fill="${body}"/><path d="M53,31 L59,2 L65,31 Z" fill="${body}"/><path d="M66,42 L74,10 L80,40 Z" fill="${body}"/>`;
+  }
+  if (cfg.horns) {
+    s += `<path d="M32,29 L16,2 L41,24 Z" fill="${belly}"/><path d="M68,29 L84,2 L59,24 Z" fill="${belly}"/>`;
+  }
+  if (cfg.antenna) {
+    s += `<line x1="50" y1="30" x2="50" y2="10" stroke="${body}" stroke-width="4"/><circle cx="50" cy="8" r="5" fill="${belly}"/>`;
+  }
+  if (cfg.eyes === 1) {
+    const pupil1 = cfg.slitEyes
+      ? `<ellipse cx="50" cy="${eyeY + 1}" rx="3" ry="8" fill="${eyeColor}"/>`
+      : `<circle cx="50" cy="${eyeY + 1}" r="7.5" fill="${eyeColor}"/>`;
+    s += `<circle cx="50" cy="${eyeY}" r="15" fill="#fff"/>${pupil1}<circle cx="53.5" cy="${eyeY - 2.5}" r="2.5" fill="#fff"/>`;
+  } else {
+    const pupilL = cfg.slitEyes
+      ? `<ellipse cx="37" cy="${eyeY + 1}" rx="2.3" ry="5.8" fill="${eyeColor}"/>`
+      : `<circle cx="37" cy="${eyeY + 1}" r="5.2" fill="${eyeColor}"/>`;
+    const pupilR = cfg.slitEyes
+      ? `<ellipse cx="63" cy="${eyeY + 1}" rx="2.3" ry="5.8" fill="${eyeColor}"/>`
+      : `<circle cx="63" cy="${eyeY + 1}" r="5.2" fill="${eyeColor}"/>`;
+    s += `<circle cx="37" cy="${eyeY}" r="10.5" fill="#fff"/>${pupilL}<circle cx="39.3" cy="${eyeY - 2}" r="1.8" fill="#fff"/>`;
+    s += `<circle cx="63" cy="${eyeY}" r="10.5" fill="#fff"/>${pupilR}<circle cx="65.3" cy="${eyeY - 2}" r="1.8" fill="#fff"/>`;
+  }
+  if (cfg.angry) {
+    s += `<path d="M25,${browY + 3} L42,${browY - 2}" stroke="#1a0b2e" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<path d="M75,${browY + 3} L58,${browY - 2}" stroke="#1a0b2e" stroke-width="4" stroke-linecap="round"/>`;
+  }
+  if (cfg.fangs) {
+    s += `<path d="M27,${mouthY - 3} Q50,${mouthY + 22} 73,${mouthY - 3} Q62,${mouthY + 6} 50,${mouthY + 6} Q38,${mouthY + 6} 27,${mouthY - 3} Z" fill="#000"/>`;
+    s += `<path d="M31,${mouthY - 1} L34,${mouthY + 13} L38,${mouthY - 1} L41,${mouthY + 14} L45,${mouthY - 1} L50,${mouthY + 15} L55,${mouthY - 1} L59,${mouthY + 14} L62,${mouthY - 1} L66,${mouthY + 13} L69,${mouthY - 1} Z" fill="#fff"/>`;
+  } else {
+    s += `<path d="M36,${mouthY} Q50,${mouthY + 11} 64,${mouthY}" stroke="#3a1155" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  }
+  s += '</svg>';
+  return s;
+}
+
+const ENEMY_LIST = [
+  // ▼ tier1：かわいい・シンプル(やさしいむずかしさでよく出る)
+  { name: "ちびおばけ",       tier: 1, cfg: { shape: "ghost", body: "#b19cd9", belly: "#f0e6ff", eyes: 2 } },
+  { name: "ねむねむようかい", tier: 1, cfg: { shape: "cloud", body: "#7ec8e8", belly: "#e0f7ff", eyes: 1 } },
+  { name: "わんぱくスライム", tier: 1, cfg: { shape: "slime", body: "#4fe0c0", belly: "#e3fffa", eyes: 2 } },
+  { name: "まめだぬき",       tier: 1, cfg: { shape: "round", body: "#c9a876", belly: "#f0dfc0", eyes: 2 } },
+  { name: "ころころうさぎ",   tier: 1, cfg: { shape: "round", body: "#ffb6d9", belly: "#fff0f7", eyes: 2 } },
+  { name: "しろくまっこ",     tier: 1, cfg: { shape: "round", body: "#eef3f7", belly: "#ffffff", eyes: 2 } },
+  { name: "ひよこん",         tier: 1, cfg: { shape: "round", body: "#ffe066", belly: "#fff9d9", eyes: 2 } },
+  { name: "あわあわくらげ",   tier: 1, cfg: { shape: "cloud", body: "#b3e8ff", belly: "#eafcff", eyes: 1 } },
+  { name: "まんまるももんが", tier: 1, cfg: { shape: "round", body: "#d9b3ff", belly: "#f2e6ff", eyes: 2 } },
+  { name: "くりくりもぐら",   tier: 1, cfg: { shape: "round", body: "#6b4a35", belly: "#a9826a", eyes: 2 } },
+  { name: "てんとうむしっこ", tier: 1, cfg: { shape: "round", body: "#ff5c5c", belly: "#ffd9d9", eyes: 2 } },
+  { name: "ぷちぺんぎん",     tier: 1, cfg: { shape: "round", body: "#2b2b3a", belly: "#ffffff", eyes: 2 } },
+  { name: "こだぬきぽん",     tier: 1, cfg: { shape: "round", body: "#b5895f", belly: "#f0dcc0", eyes: 2 } },
+  { name: "わたぐもぴよ",     tier: 1, cfg: { shape: "cloud", body: "#ffffff", belly: "#eef7ff", eyes: 1 } },
+  { name: "ちびあひる",       tier: 1, cfg: { shape: "round", body: "#ffe38a", belly: "#fff6d9", eyes: 2 } },
+  // ▼ tier2：ふつう(すこし表情がついてくる)
+  { name: "どろんこゴブリン", tier: 2, cfg: { shape: "wide",  body: "#3c6b2e", belly: "#5e8f4a", eyes: 2, fangs: true, angry: true } },
+  { name: "かぜのせいれい",   tier: 2, cfg: { shape: "cloud", body: "#4a2f7a", belly: "#7856ad", eyes: 2, antenna: true, wings: true, angry: true } },
+  { name: "うみのかいぶつ",   tier: 2, cfg: { shape: "round", body: "#0f5266", belly: "#1c7d96", eyes: 1, tentacles: true, angry: true } },
+  { name: "つきよのねこ",     tier: 2, cfg: { shape: "round", body: "#382a52", belly: "#5c4680", eyes: 2, horns: true, angry: true } },
+  { name: "いたずらこぞう",   tier: 2, cfg: { shape: "round", body: "#8f2f52", belly: "#b8547a", eyes: 2, antenna: true, fangs: true, angry: true } },
+  { name: "とげとげくり",     tier: 2, cfg: { shape: "round", body: "#8a5a2b", belly: "#d9b98a", eyes: 2, spikes: true, angry: true } },
+  { name: "かみなりうさぎ",   tier: 2, cfg: { shape: "round", body: "#ffe600", belly: "#fff9b3", eyes: 2, antenna: true, angry: true } },
+  { name: "みずかきがえる",   tier: 2, cfg: { shape: "round", body: "#4caf7d", belly: "#cdeede", eyes: 2, fangs: true, angry: true } },
+  { name: "すなあらしごぶ",   tier: 2, cfg: { shape: "wide",  body: "#d9a441", belly: "#f0dcaa", eyes: 2, fangs: true, angry: true } },
+  { name: "つららこうもり",   tier: 2, cfg: { shape: "round", body: "#7ec8e3", belly: "#e0f4fb", eyes: 2, wings: true, angry: true } },
+  { name: "ほのおとかげ",     tier: 2, cfg: { shape: "tall",  body: "#ff7043", belly: "#ffccbc", eyes: 2, tail: true, angry: true } },
+  { name: "どくきのこん",     tier: 2, cfg: { shape: "round", body: "#b23a48", belly: "#f7c6cc", eyes: 2, spikes: true, angry: true } },
+  { name: "すいしょうがめ",   tier: 2, cfg: { shape: "wide",  body: "#4dd0c4", belly: "#d0f7f2", eyes: 2, spikes: true, angry: true } },
+  { name: "まほうねずみ",     tier: 2, cfg: { shape: "round", body: "#9c6bd6", belly: "#e3d3f7", eyes: 2, antenna: true, angry: true } },
+  { name: "きょじんあり",     tier: 2, cfg: { shape: "wide",  body: "#3d3d3d", belly: "#8f8f8f", eyes: 2, fangs: true, angry: true } },
+  { name: "かぜのこぎつね",   tier: 2, cfg: { shape: "round", body: "#f28c28", belly: "#ffe0b3", eyes: 2, tail: true, angry: true } },
+  { name: "つちのこりゅう",   tier: 2, cfg: { shape: "tall",  body: "#8b7355", belly: "#d9c9a3", eyes: 2, tail: true, angry: true } },
+  { name: "うみへびっこ",     tier: 2, cfg: { shape: "round", body: "#2e7d6b", belly: "#a8e0d4", eyes: 1, tentacles: true, angry: true } },
+  { name: "ほしぞらこうもり", tier: 2, cfg: { shape: "round", body: "#1a1a3d", belly: "#4d4d8f", eyes: 2, wings: true, angry: true, eyeColor: "#ffd23f" } },
+  { name: "どろんこあひる",   tier: 2, cfg: { shape: "round", body: "#6b5a3a", belly: "#a89060", eyes: 2, angry: true } },
+  // ▼ tier3：つよい(つの・きば・とげのコンボ)
+  { name: "ぷちドラゴン",     tier: 3, cfg: { shape: "tall", body: "#a13a1e", belly: "#d1622f", eyes: 2, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, eyeColor: "#ff2e2e" } },
+  { name: "もりのまじゅう",   tier: 3, cfg: { shape: "wide", body: "#33501f", belly: "#4d7530", eyes: 2, horns: true, fangs: true, spikes: true, angry: true, claws: true, eyeColor: "#ff2e2e" } },
+  { name: "かがみおに",       tier: 3, cfg: { shape: "wide", body: "#7a3b3b", belly: "#c98f8f", eyes: 2, horns: true, fangs: true, spikes: true, angry: true, claws: true } },
+  { name: "いわがんまじゅう", tier: 3, cfg: { shape: "wide", body: "#5a5a5a", belly: "#a3a3a3", eyes: 2, horns: true, spikes: true, angry: true, claws: true } },
+  { name: "ちのけむりおおかみ", tier: 3, cfg: { shape: "tall", body: "#7a2f2f", belly: "#c98f8f", eyes: 2, fangs: true, tail: true, angry: true, claws: true } },
+  { name: "かなづちごーれむ", tier: 3, cfg: { shape: "wide", body: "#6b6b4a", belly: "#b3b38a", eyes: 2, spikes: true, fangs: true, angry: true, claws: true } },
+  { name: "あかつきたか",     tier: 3, cfg: { shape: "tall", body: "#c0392b", belly: "#f0b3a3", eyes: 2, wings: true, fangs: true, angry: true, claws: true } },
+  { name: "のろいねこ",       tier: 3, cfg: { shape: "round", body: "#4a2f6b", belly: "#8f70bd", eyes: 2, horns: true, fangs: true, angry: true, claws: true, eyeColor: "#ff2e2e" } },
+  { name: "どくがえるおう",   tier: 3, cfg: { shape: "wide", body: "#6b8f3d", belly: "#b3d98a", eyes: 2, spikes: true, fangs: true, angry: true, claws: true } },
+  { name: "すなのじゃばら",   tier: 3, cfg: { shape: "tall", body: "#b8860b", belly: "#e6c260", eyes: 2, tail: true, fangs: true, angry: true, claws: true } },
+  { name: "くろきりむし",     tier: 3, cfg: { shape: "wide", body: "#3d3d5a", belly: "#7a7aa3", eyes: 2, spikes: true, fangs: true, angry: true, claws: true } },
+  { name: "ふぶきこぐま",     tier: 3, cfg: { shape: "wide", body: "#3a5f7a", belly: "#a3c9e0", eyes: 2, horns: true, fangs: true, angry: true, claws: true } },
+  { name: "ようがんとかげ",   tier: 3, cfg: { shape: "tall", body: "#b8390b", belly: "#ff8a3c", eyes: 2, spikes: true, tail: true, fangs: true, angry: true, claws: true } },
+  // ▼ tier4：さいきょうクラス(こわもてフル装備、むずかしい・超むずかしいでよく出る)
+  { name: "まおうのつかい",   tier: 4, cfg: { shape: "tall", body: "#5a1a2a", belly: "#8a2a4a", eyes: 2, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "しのくらげおう",   tier: 4, cfg: { shape: "cloud", body: "#3a1a4a", belly: "#6a2a7a", eyes: 1, wings: true, fangs: true, angry: true, claws: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "じゃおうへび",     tier: 4, cfg: { shape: "tall", body: "#2a5a3a", belly: "#4a8a5a", eyes: 2, fangs: true, tail: true, spikes: true, angry: true, claws: true, scars: true, slitEyes: true, eyeColor: "#ff2e2e" } },
+  { name: "くろこげりゅう",   tier: 4, cfg: { shape: "tall", body: "#2a2a2a", belly: "#5a5a5a", eyes: 2, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "あんこくきし",     tier: 4, cfg: { shape: "wide", body: "#1a1a1a", belly: "#4a4a4a", eyes: 2, horns: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "さいごのばんにん", tier: 4, cfg: { shape: "wide", body: "#4a1a1a", belly: "#8a2a2a", eyes: 2, horns: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "めつぼうのつばさ", tier: 4, cfg: { shape: "tall", body: "#3a1a5a", belly: "#6a2a8a", eyes: 2, wings: true, horns: true, fangs: true, tail: true, angry: true, claws: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "しんえんのぬし",   tier: 4, cfg: { shape: "round", body: "#1a2a4a", belly: "#2a4a6a", eyes: 1, tentacles: true, fangs: true, angry: true, claws: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "のろいのこぞう",   tier: 4, cfg: { shape: "round", body: "#4a1a4a", belly: "#7a2a7a", eyes: 2, antenna: true, fangs: true, horns: true, angry: true, claws: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "かえんのだいおう", tier: 4, cfg: { shape: "wide", body: "#6a1a0a", belly: "#a8320a", eyes: 2, wings: true, horns: true, fangs: true, spikes: true, tail: true, angry: true, claws: true, scars: true, slitEyes: true, eyeColor: "#ff1a1a" } },
+  { name: "がいこつうさぎ",   tier: 3, cfg: { shape: "round", body: "#e8e4d0", belly: "#fff9e6", eyes: 2, fangs: true, horns: true, angry: true, claws: true } }
+];
+const BOSS_CFG     = { shape: "tall", body: "#8f0f42", belly: "#c73366", eyes: 2, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, eyeColor: "#ff1a1a", slitEyes: true };
+// ▼ 追加：10の倍数のウェーブで出る、あたらしい「ボス」
+const BOSS2_CFG = { shape: "wide", body: "#1f6b2a", belly: "#4fae5a", eyes: 2, horns: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, eyeColor: "#ffea00", slitEyes: true };
+const BOSS2_NAME = "ボス";
+const BOSS2_WORDS = [
+  { kana: "もりのばんにん", romaji: "morinobannin" },
+  { kana: "みどりのきょしん", romaji: "midorinokyoshin" },
+  { kana: "どくのぬま", romaji: "dokunonuma" }
+];
+// ▼ 追加：25の倍数のウェーブで出る「中ボス」
+const MIDBOSS_CFG = { shape: "round", body: "#3a1f7a", belly: "#6a4ab0", eyes: 2, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, eyeColor: "#7dffe0", slitEyes: true };
+const MIDBOSS_NAME = "中ボス";
+const MIDBOSS_WORDS = [
+  { kana: "たそがれのけんし", romaji: "tasogarenokenshi" },
+  { kana: "むらさきのかぜ", romaji: "murasakinokaze" },
+  { kana: "よふけのばんしょう", romaji: "yofukenobanshou" }
+];
+const LASTBOSS_CFG = { shape: "tall", body: "#1f0a33", belly: "#3a1155", eyes: 2, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, eyeColor: "#ff1a1a", slitEyes: true };
+const FINAL_CFG    = { shape: "wide", body: "#050208", belly: "#4a2f00", eyeColor: "#ff1a1a", eyes: 1, horns: true, wings: true, tail: true, fangs: true, spikes: true, angry: true, claws: true, scars: true, slitEyes: true };
+// ▼ 追加：444444ぶんの4でとうじょうする、ばくはつみたいにつよい「だいばくはつキング」
+const SUPER_STRONG_CFG = { shape: "ghost", body: "#050505", belly: "#2a0a3a", eyeColor: "#eafff5", eyes: 2, slitEyes: true, angry: true, fangs: true, claws: true, spikes: true, scythe: true };
+const SUPER_STRONG_NAME = "💀しにがみおう💀";
+const SUPER_STRONG_WORDS = [
+  { kana: "しにがみのささやき", romaji: "shinigaminosasayaki" },
+  { kana: "うんめいのとき", romaji: "unmeinotoki" },
+  { kana: "おわりのじかん", romaji: "owarinojikan" }
+];
+// ▼ 追加：5555ぶんの5で出る、コインをいっぱい落とす「マネーバッグくん」
+const COIN_MOB_CFG = { shape: "round", body: "#ffd23f", belly: "#fff6c9", eyeColor: "#1a0b2e", eyes: 2 };
+const COIN_MOB_NAME = "💰マネーバッグくん💰";
+const COIN_MOB_WORDS = [
+  { kana: "たからのやま", romaji: "takaranoyama" },
+  { kana: "ざっくざく", romaji: "zakkuzaku" },
+  { kana: "おおばんぶるまい", romaji: "oobanburumai" }
+];
+const BOSS_NAME = "だいまおうドラゴン";
+const LASTBOSS_NAME = "かくれらすぼす";
+const FINAL_NAME = "らすぼす";
+// ▲▲▲ ここまで ▲▲▲
+
+// ▼▼▼ ここが直したところ①：ローマ字の「ゆらぎ」表をつくる ▼▼▼
+// 「ti」と「chi」、「si」と「shi」みたいに、2通りの書き方がある音をまとめたよ。
+// 前回は「si→shi」のような片方向しか変換してなくて、
+// もともと shi や chi で書かれている単語には効いてなかったの…😅
+// なので今回は「shi→si」の逆方向もちゃんと用意して、両方OKになるようにしたよ！
+const ROMAJI_TO_HEPBURN = [
+  ["hu", "fu"],
+  ["sya", "sha"], ["syu", "shu"], ["syo", "sho"],
+  ["tya", "cha"], ["tyu", "chu"], ["tyo", "cho"],
+  ["zya", "ja"], ["zyu", "ju"], ["zyo", "jo"],
+  ["si", "shi"], ["ti", "chi"], ["tu", "tsu"], ["zi", "ji"], ["du", "zu"]
+];
+const ROMAJI_TO_KUNREI = [
+  ["fu", "hu"],
+  ["sha", "sya"], ["shu", "syu"], ["sho", "syo"],
+  ["cha", "tya"], ["chu", "tyu"], ["cho", "tyo"],
+  ["ja", "zya"], ["ju", "zyu"], ["jo", "zyo"],
+  ["shi", "si"], ["chi", "ti"], ["tsu", "tu"], ["ji", "zi"], ["zu", "du"]
+];
+function applyPairs(word, pairs) {
+  // ▼ 変更：「しゅ(shu)」「ちゅ(chu)」を、hu⇔fuのルールからまもるしくみ。
+  // まずhu⇔fuだけを保護つきでさきに処理してから、のこりのルール(ちょ・しょ・じゃ等ふくむ)を処理するよ
+  const huPair = pairs.find(([a]) => a === 'hu' || a === 'fu');
+  let r = word;
+  if (huPair) {
+    const [from, to] = huPair;
+    r = r.split('shu').join('\u0001').split('chu').join('\u0002');
+    r = r.split(from).join(to);
+    r = r.split('\u0001').join('shu').split('\u0002').join('chu');
+  }
+  for (const [a, b] of pairs) {
+    if (a === 'hu' || a === 'fu') continue; // ← すでに処理ずみなのでスキップ
+    r = r.split(a).join(b);
+  }
+  return r;
+}
+// 1つの単語につき「元の書き方」「shi系の書き方」「si系の書き方」を全部OKにする
+function makeVariants(romaji) {
+  const toHep = applyPairs(romaji, ROMAJI_TO_HEPBURN);
+  const toKun = applyPairs(romaji, ROMAJI_TO_KUNREI);
+  return Array.from(new Set([romaji, toHep, toKun]));
+}
+// ▲▲▲ ここまで ▲▲▲
+
+// ▼ 追加：むずかしさごとの せってい表だよ
+// timeMult → じかんの長さ（大きいほど long）
+// dmgMult  → うけるダメージの大きさ（大きいほど痛い）
+// hpStart / maxHPStart → はじめのHPと、さいだいHP
+// finalHits → ラスボスをたおすのにひつような回数
+// bossHits  → だいまおうドラゴンをたおすのにひつような回数
+const DIFF_SETTINGS = {
+  VERY_EASY: { label: '😄超かんたん', timeMult: 1.7, dmgMult: 0.45, hpStart: 155, maxHPStart: 210, finalHits: 1, bossHits: 1 },
+  EASY:   { label: '🙂かんたん', timeMult: 1.1, dmgMult: 0.9, hpStart: 100, maxHPStart: 150, finalHits: 2, bossHits: 1 },
+  NORMAL: { label: '😐ふつう', timeMult: 0.9, dmgMult: 1.05, hpStart: 95, maxHPStart: 140, finalHits: 2, bossHits: 1 },
+  HARD:   { label: '🔥むずかしい', timeMult: 1.05, dmgMult: 0.9, hpStart: 126,  maxHPStart: 177, finalHits: 3, bossHits: 2 },
+  EXTREME: { label: '💀超むずかしい', timeMult: 0.85, dmgMult: 1.2, hpStart: 118, maxHPStart: 165, finalHits: 4, bossHits: 3 }
+};
+let difficulty = 'NORMAL';
+
+// ▼ 追加：10ウェーブごとに かわる「たたかう場所」のせってい
+const STAGE_THEMES = [
+  {
+    label: "🌅 ゆうやけのへいげん",
+    bg: "radial-gradient(circle at 78% 20%, rgba(255,224,130,0.95), rgba(255,224,130,0.35) 9%, transparent 20%), linear-gradient(180deg, #241442 0%, #4a2a68 26%, #a34a7a 50%, #ff8a5c 64%, #ffcf6b 70%, #6fae5c 70%, #4c8a44 82%, #356b32 100%)",
+    mountain: "#3a2a52"
+  },
+  {
+    label: "🌙 よるのもり",
+    bg: "radial-gradient(circle at 20% 16%, rgba(235,235,255,0.95), rgba(235,235,255,0.3) 8%, transparent 18%), radial-gradient(2px 2px at 55% 10%, #fff, transparent), radial-gradient(2px 2px at 82% 22%, #fff, transparent), radial-gradient(1.5px 1.5px at 38% 6%, #fff, transparent), linear-gradient(180deg, #05061a 0%, #10123a 28%, #232a63 50%, #2c3470 64%, #333a5f 70%, #16362a 70%, #0c231c 85%, #071410 100%)",
+    mountain: "#0d1030"
+  },
+  {
+    label: "❄️ ゆきのだいち",
+    bg: "radial-gradient(circle at 75% 18%, rgba(255,255,255,0.95), rgba(255,255,255,0.4) 8%, transparent 18%), linear-gradient(180deg, #16233f 0%, #35507a 25%, #7096ba 48%, #bcd6e8 62%, #eaf6ff 70%, #dcefef 70%, #b7d9dd 84%, #8fc0c4 100%)",
+    mountain: "#47607a"
+  },
+  {
+    label: "🌋 かざんちたい",
+    bg: "radial-gradient(circle at 80% 15%, rgba(255,140,60,0.9), rgba(255,90,30,0.3) 10%, transparent 20%), linear-gradient(180deg, #1a0505 0%, #3a0a0a 25%, #6b1a10 45%, #a3320f 60%, #d9591a 68%, #ff8a3c 70%, #4a1608 70%, #2c0d05 88%, #190602 100%)",
+    mountain: "#2c0d05"
+  },
+  {
+    label: "🌊 しんかいのけっせんじょう",
+    bg: "radial-gradient(circle at 50% 12%, rgba(180,255,255,0.6), rgba(120,220,255,0.25) 10%, transparent 22%), linear-gradient(180deg, #01030f 0%, #051a33 25%, #073a4d 45%, #0a5c66 60%, #12888a 70%, #073226 70%, #041d18 85%, #010b09 100%)",
+    mountain: "#052a2a"
+  },
+  {
+    label: "🏜️ さばく",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,235,150,0.95), transparent 20%), linear-gradient(180deg, #3a1a4a 0%, #6b3a5a 28%, #c96a3a 50%, #f0c46a 68%, #f0c46a 70%, #c9964a 70%, #8a5f2c 100%)",
+    mountain: "#5a3a1a"
+  },
+  {
+    label: "🌸 さくらのもり",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,230,240,0.9), transparent 20%), linear-gradient(180deg, #3a2050 0%, #7a4a7a 28%, #e88fb0 50%, #ffd6e6 68%, #ffd6e6 70%, #7fae6f 70%, #4c7a3f 100%)",
+    mountain: "#5a3a5a"
+  },
+  {
+    label: "🧊 ひょうがのどうくつ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(200,240,255,0.7), transparent 20%), linear-gradient(180deg, #040c1a 0%, #0d2a45 28%, #1e5c78 50%, #8fd8ec 68%, #8fd8ec 70%, #2c4a5a 70%, #16303a 100%)",
+    mountain: "#123040"
+  },
+  {
+    label: "🌾 みどりののはら",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,250,200,0.9), transparent 20%), linear-gradient(180deg, #2a5a8a 0%, #5c94c4 28%, #a8d8f0 50%, #dff3ff 68%, #dff3ff 70%, #7fc25a 70%, #3e8f3a 100%)",
+    mountain: "#3c6b32"
+  },
+  {
+    label: "🏝️ なんごくのしま",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,245,180,0.95), transparent 20%), linear-gradient(180deg, #0a3a5a 0%, #0e7a9a 28%, #3fc9d4 50%, #bdf3ec 68%, #bdf3ec 70%, #e8d896 70%, #b89a4a 100%)",
+    mountain: "#0d5a52"
+  },
+  {
+    label: "🕳️ ようがんどうくつ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,140,60,0.85), transparent 20%), linear-gradient(180deg, #0a0202 0%, #3a0a05 28%, #7a2a0a 50%, #c9541a 68%, #c9541a 70%, #2a0a02 70%, #150301 100%)",
+    mountain: "#3a1005"
+  },
+  {
+    label: "☁️ てんくうのしろ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,255,240,0.95), transparent 20%), linear-gradient(180deg, #274a8a 0%, #5c86c9 28%, #a9d0f0 50%, #f2faff 68%, #f2faff 70%, #e8eef5 70%, #c3d2e0 100%)",
+    mountain: "#8fa8c0"
+  },
+  {
+    label: "🌌 うちゅうくうかん",
+    bg: "radial-gradient(circle at 76% 18%, rgba(190,160,255,0.8), transparent 20%), linear-gradient(180deg, #000006 0%, #0a0430 28%, #1c0f5a 50%, #3a1f7a 68%, #3a1f7a 70%, #150a2a 70%, #08051a 100%)",
+    mountain: "#180a3a"
+  },
+  {
+    label: "🏚️ ふるいはいきょ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(220,200,160,0.6), transparent 20%), linear-gradient(180deg, #1a1610 0%, #3a3226 28%, #5a4f3a 50%, #8a7a5a 68%, #8a7a5a 70%, #4a3f2a 70%, #2a2318 100%)",
+    mountain: "#3a3020"
+  },
+  {
+    label: "🌺 なつのはなばたけ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,250,180,0.95), transparent 20%), linear-gradient(180deg, #1a4a7a 0%, #3f8ac4 28%, #8fd4e8 50%, #e6faff 68%, #e6faff 70%, #e85a8a 70%, #c93a6a 100%)",
+    mountain: "#2f7a4a"
+  },
+  {
+    label: "🌨️ ふぶきのやま",
+    bg: "radial-gradient(circle at 76% 18%, rgba(240,248,255,0.9), transparent 20%), linear-gradient(180deg, #2a3a4a 0%, #5a6f80 28%, #a5b8c4 50%, #eef4f8 68%, #eef4f8 70%, #d0dde5 70%, #a8bcc9 100%)",
+    mountain: "#5a6a78"
+  },
+  {
+    label: "🌕 まんげつのよる",
+    bg: "radial-gradient(circle at 76% 18%, rgba(230,230,210,0.9), transparent 20%), linear-gradient(180deg, #02040f 0%, #0a1030 28%, #1a2a5a 50%, #2e4a7a 68%, #2e4a7a 70%, #0f2a1c 70%, #081810 100%)",
+    mountain: "#101f3a"
+  },
+  {
+    label: "🏯 わふうのしろ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,210,120,0.9), transparent 20%), linear-gradient(180deg, #1a0a0a 0%, #4a1414 28%, #8a2a1e 50%, #d9581e 68%, #d9581e 70%, #7a2418 70%, #3a0f0a 100%)",
+    mountain: "#5a1a10"
+  },
+  {
+    label: "🌊 なみうちぎわ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,250,220,0.95), transparent 20%), linear-gradient(180deg, #0a2a5a 0%, #1a5c8a 28%, #4fa8c9 50%, #bfe8ec 68%, #bfe8ec 70%, #e8d9a0 70%, #c9b06a 100%)",
+    mountain: "#0f4a5a"
+  },
+  {
+    label: "🔮 まほうのしんぴのもり",
+    bg: "radial-gradient(circle at 76% 18%, rgba(220,180,255,0.85), transparent 20%), linear-gradient(180deg, #0a0520 0%, #2a1050 28%, #5a2a8a 50%, #8a4fc0 68%, #8a4fc0 70%, #1f0a3a 70%, #3a1a5f 100%)",
+    mountain: "#2a0a4a"
+  },
+  {
+    label: "🌈 にじのたに",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,255,255,0.9), transparent 20%), linear-gradient(180deg, #2a1a4a 0%, #7a3a8a 28%, #e85a9a 50%, #ffe08a 68%, #ffe08a 70%, #5ac97a 70%, #2f8a4f 100%)",
+    mountain: "#5a2a7a"
+  },
+  {
+    label: "🍄 きのこのもり",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,220,220,0.85), transparent 20%), linear-gradient(180deg, #1a0a10 0%, #4a1a2a 28%, #8a3a4a 50%, #c96a6a 68%, #c96a6a 70%, #3a6b3a 70%, #1f4a1f 100%)",
+    mountain: "#4a1a2a"
+  },
+  {
+    label: "🎪 サーカスのひろば",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,240,200,0.95), transparent 20%), linear-gradient(180deg, #3a0a2a 0%, #8a1a4a 28%, #e83a5a 50%, #ffc93c 68%, #ffc93c 70%, #e8d0a0 70%, #c9a860 100%)",
+    mountain: "#5a0a2a"
+  },
+  {
+    label: "🏰 こおりのしろ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(230,250,255,0.95), transparent 20%), linear-gradient(180deg, #0a1a3a 0%, #2a4a6a 28%, #8fc4e0 50%, #e8f8ff 68%, #e8f8ff 70%, #d0eaf5 70%, #a8d4e8 100%)",
+    mountain: "#3a5a7a"
+  },
+  {
+    label: "🌻 ひまわりばたけ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,250,180,0.95), transparent 20%), linear-gradient(180deg, #1a4a8a 0%, #3f8ac4 28%, #ffe066 50%, #fff6c9 68%, #fff6c9 70%, #7fae3a 70%, #4c7a1f 100%)",
+    mountain: "#7a6a1a"
+  },
+  {
+    label: "🦋 ちょうのたに",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,235,250,0.9), transparent 20%), linear-gradient(180deg, #2a1a4a 0%, #6a4a8a 28%, #c98fd4 50%, #f0dcff 68%, #f0dcff 70%, #8fce9a 70%, #4c9a5f 100%)",
+    mountain: "#5a3a7a"
+  },
+  {
+    label: "🐉 りゅうのすみか",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,80,50,0.7), transparent 20%), linear-gradient(180deg, #0a0202 0%, #2a0505 28%, #5a1010 50%, #8a2a10 68%, #8a2a10 70%, #1a0303 70%, #0a0101 100%)",
+    mountain: "#3a0a05"
+  },
+  {
+    label: "🌫️ きりのもり",
+    bg: "radial-gradient(circle at 76% 18%, rgba(230,230,220,0.6), transparent 20%), linear-gradient(180deg, #2a3530 0%, #4a5a4a 28%, #7a8f7a 50%, #c9d4c0 68%, #c9d4c0 70%, #3a4a35 70%, #232f20 100%)",
+    mountain: "#4a554a"
+  },
+  {
+    label: "🏞️ たきのさと",
+    bg: "radial-gradient(circle at 76% 18%, rgba(220,255,250,0.85), transparent 20%), linear-gradient(180deg, #0a2a3a 0%, #1a5a6a 28%, #3f9aa8 50%, #bdeef0 68%, #bdeef0 70%, #4a8a5a 70%, #2a5a35 100%)",
+    mountain: "#155a5a"
+  },
+  {
+    label: "🌵 かわいたこうや",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,230,160,0.95), transparent 20%), linear-gradient(180deg, #3a2010 0%, #7a4a20 28%, #c98a3a 50%, #f0c470 68%, #f0c470 70%, #8a6a3a 70%, #5a4520 100%)",
+    mountain: "#5a3a15"
+  },
+  {
+    label: "🎇 はなびたいかい",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,240,180,0.9), transparent 20%), linear-gradient(180deg, #020210 0%, #150a3a 28%, #5a1a5a 50%, #c93a7a 68%, #c93a7a 70%, #150a25 70%, #0a0515 100%)",
+    mountain: "#2a0a3a"
+  },
+  {
+    label: "🍂 こうようのやま",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,210,120,0.9), transparent 20%), linear-gradient(180deg, #2a1005 0%, #6a2a0a 28%, #c9581a 50%, #f0a83a 68%, #f0a83a 70%, #8a4a15 70%, #5a2f0a 100%)",
+    mountain: "#5a2a0a"
+  },
+  {
+    label: "🌱 しんりょくのもり",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,255,200,0.9), transparent 20%), linear-gradient(180deg, #153a6a 0%, #3f7ab0 28%, #8fd48f 50%, #e0ffe0 68%, #e0ffe0 70%, #3a9a4a 70%, #1f6a2a 100%)",
+    mountain: "#1f5a2a"
+  },
+  {
+    label: "🏛️ こだいいせき",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,235,180,0.85), transparent 20%), linear-gradient(180deg, #2a2010 0%, #5a4a20 28%, #a88a4a 50%, #e0c98a 68%, #e0c98a 70%, #8a7a5a 70%, #5a4f35 100%)",
+    mountain: "#5a4a2a"
+  },
+  {
+    label: "🌑 しんやみのどうくつ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(120,80,180,0.4), transparent 20%), linear-gradient(180deg, #000000 0%, #0a0510 28%, #150a20 50%, #251540 68%, #251540 70%, #0a0510 70%, #020103 100%)",
+    mountain: "#100a1a"
+  },
+  {
+    label: "🎠 ゆめのゆうえんち",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,220,240,0.95), transparent 20%), linear-gradient(180deg, #2a1040 0%, #7a3aa0 28%, #e85ac9 50%, #ffd6f0 68%, #ffd6f0 70%, #8fd4e0 70%, #4ca8c0 100%)",
+    mountain: "#5a1a7a"
+  },
+  {
+    label: "🕌 さばくのオアシス",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,245,200,0.95), transparent 20%), linear-gradient(180deg, #2a1a3a 0%, #5a3a5a 28%, #c98a4a 50%, #f5dfa0 68%, #f5dfa0 70%, #1f8a7a 70%, #0f5a4f 100%)",
+    mountain: "#5a3a1a"
+  },
+  {
+    label: "🌟 ほしぞらのたいら",
+    bg: "radial-gradient(circle at 76% 18%, rgba(220,220,255,0.7), transparent 20%), linear-gradient(180deg, #000010 0%, #0a0a2a 28%, #1a1a4a 50%, #2a2a6a 68%, #2a2a6a 70%, #151530 70%, #0a0a1a 100%)",
+    mountain: "#1a1a3a"
+  },
+  {
+    label: "🏖️ しろいすなはま",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,255,230,0.95), transparent 20%), linear-gradient(180deg, #0a3a6a 0%, #1a7ab0 28%, #5fd4e0 50%, #d0fbff 68%, #d0fbff 70%, #f0e5c0 70%, #d9c98a 100%)",
+    mountain: "#0f5a8a"
+  },
+  {
+    label: "🌌 オーロラのそら",
+    bg: "radial-gradient(circle at 76% 18%, rgba(180,255,220,0.6), transparent 20%), linear-gradient(180deg, #000510 0%, #0a2a30 28%, #1a5a4a 50%, #3a8a5a 68%, #3a8a5a 70%, #0a1520 70%, #050a10 100%)",
+    mountain: "#0a3a2a"
+  },
+  {
+    label: "🍁 もみじだに",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,150,120,0.85), transparent 20%), linear-gradient(180deg, #2a0505 0%, #5a0a10 28%, #a8201a 50%, #e85a2a 68%, #e85a2a 70%, #5a1005 70%, #2f0803 100%)",
+    mountain: "#4a0a0a"
+  },
+  {
+    label: "🏹 せんしのへいげん",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,225,150,0.9), transparent 20%), linear-gradient(180deg, #3a2a10 0%, #6a4a1a 28%, #a87a2a 50%, #e0c060 68%, #e0c060 70%, #7a8a4a 70%, #4f5a2a 100%)",
+    mountain: "#5a3a15"
+  },
+  {
+    label: "🧙 まほうつかいのとう",
+    bg: "radial-gradient(circle at 76% 18%, rgba(230,180,255,0.85), transparent 20%), linear-gradient(180deg, #0a0520 0%, #2a1050 28%, #5a2a8a 50%, #9a5ac9 68%, #9a5ac9 70%, #1a0a30 70%, #0a0518 100%)",
+    mountain: "#2a0a4a"
+  },
+  {
+    label: "🐋 くじらのうみ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(180,220,255,0.7), transparent 20%), linear-gradient(180deg, #010a2a 0%, #0a2a5a 28%, #1a5a8a 50%, #3f8ac0 68%, #3f8ac0 70%, #031530 70%, #010a1a 100%)",
+    mountain: "#0a3a5a"
+  },
+  {
+    label: "🌾 きんいろのはたけ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,250,200,0.95), transparent 20%), linear-gradient(180deg, #3a2a5a 0%, #8a6a4a 28%, #e0b04a 50%, #fbe8a0 68%, #fbe8a0 70%, #c99a3a 70%, #8a6a1f 100%)",
+    mountain: "#7a5a1a"
+  },
+  {
+    label: "🏔️ せかいのちょうじょう",
+    bg: "radial-gradient(circle at 76% 18%, rgba(240,250,255,0.95), transparent 20%), linear-gradient(180deg, #0a1030 0%, #3a4a7a 28%, #8fb0d4 50%, #f0f8ff 68%, #f0f8ff 70%, #e8f0f8 70%, #c0d4e5 100%)",
+    mountain: "#5a6a8a"
+  },
+  {
+    label: "🌊 だいかいりゅう",
+    bg: "radial-gradient(circle at 76% 18%, rgba(170,255,240,0.6), transparent 20%), linear-gradient(180deg, #00030f 0%, #031f3a 28%, #0a4a5a 50%, #1a8a8a 68%, #1a8a8a 70%, #02182a 70%, #010c15 100%)",
+    mountain: "#0a4a4a"
+  },
+  {
+    label: "🔥 ほのおのたに",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,180,60,0.9), transparent 20%), linear-gradient(180deg, #1a0202 0%, #4a0a05 28%, #8a2a0a 50%, #d9581a 68%, #d9581a 70%, #3a0a02 70%, #1a0501 100%)",
+    mountain: "#4a1505"
+  },
+  {
+    label: "🌙 えいえんのたそがれ",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,200,150,0.85), transparent 20%), linear-gradient(180deg, #0a0a2a 0%, #3a1a4a 28%, #7a3a5a 50%, #c9704a 68%, #c9704a 70%, #1a0a2a 70%, #0a0518 100%)",
+    mountain: "#3a1a3a"
+  },
+  {
+    label: "👑 でんせつのせかい",
+    bg: "radial-gradient(circle at 76% 18%, rgba(255,240,150,0.95), transparent 20%), linear-gradient(180deg, #1a0a2a 0%, #4a1a5a 28%, #c93a8a 50%, #ffd23f 68%, #ffd23f 70%, #3fa8c9 70%, #8a4fc9 100%)",
+    mountain: "#5a1a5a"
+  }
+];
+// ▼ 追加：50ウェーブ(さいごのてき)せんようの、とくべつなぶたい
+const FINAL_STAGE = {
+  label: "👑 さいごのけっせんのぶたい",
+  bg: "radial-gradient(circle at 50% 14%, rgba(255,215,80,0.9), rgba(255,60,60,0.35) 12%, transparent 26%), linear-gradient(180deg, #000000 0%, #1a0510 24%, #3a0a1a 44%, #6e1030 58%, #b3183f 67%, #ffd23f 71%, #2a0508 71%, #150204 86%, #050001 100%)",
+  mountain: "#1a0508"
+};
+// ▼ 追加：777ぶんの1のかくりつで出る「でんせつのげきレアステージ」
+const RARE_STAGE = {
+  label: "🌈777ぶんの1！でんせつのステージ",
+  bg: "linear-gradient(270deg, #ff2e93, #ffd23f, #00e5ff, #7fff8a, #ff8a5c, #ff2e93)",
+  mountain: "#ffffff"
+};
+let currentStageIdx = -1;
+function applyStage(wave, forceRare) {
+  // ▼ 変更：777ぶんの1、または「forceRare」がtrueのときに、げきレアステージにへんしんする
+  if (forceRare || Math.random() < 1 / 777) {
+    arena.classList.add('rare-stage');
+    arena.style.background = RARE_STAGE.bg;
+    arena.style.setProperty('--mountainColor', RARE_STAGE.mountain);
+    currentStageIdx = 'rare';
+    if (!forceRare) popup('🎉' + RARE_STAGE.label + '🎉', 130, 170); // ← 6767のときは、べつのもっと大きい合図を出すので、ここでは出さない
+    return;
+  }
+  arena.classList.remove('rare-stage');
+  const idx = (wave === FINAL_WAVE) ? 'final' : (wave - 1) % STAGE_THEMES.length; // ← 変更：50しゅるい見られるよう、まいウェーブでかわるようにした
+  if (idx === currentStageIdx) return;
+  currentStageIdx = idx;
+  const theme = (idx === 'final') ? FINAL_STAGE : STAGE_THEMES[idx];
+  arena.style.background = theme.bg;
+  arena.style.setProperty('--mountainColor', theme.mountain);
+  if (wave > 1) popup('📍' + theme.label, 190, 190); // ← 2回目以降は「場所がかわったよ」の合図を出す
+}
+
+const arena = document.getElementById('arena');
+
+// ▼ 追加：画面をひらくたびに、ふちの色をランダムにする
+const EDGE_COLORS = ['#ff2e93', '#00e5ff', '#ffd23f', '#7fff8a', '#ff8a3c', '#b085ff', '#ff5c8a', '#3affc6'];
+const randomEdgeColor = EDGE_COLORS[Math.floor(Math.random() * EDGE_COLORS.length)];
+arena.style.borderColor = randomEdgeColor;
+arena.style.boxShadow = `0 0 40px ${randomEdgeColor}55 inset, 0 8px 24px rgba(0,0,0,0.4), 0 0 16px ${randomEdgeColor}66`;
+const scoreVal = document.getElementById('scoreVal');
+const comboVal = document.getElementById('comboVal');
+const waveVal = document.getElementById('waveVal');
+const levelVal = document.getElementById('levelVal');
+const hpMaxSpan = document.getElementById('hpMax');
+const expTextEl = document.getElementById('expText');
+const expFillEl = document.getElementById('expFill');
+const enemyFill = document.getElementById('enemyFill');
+const playerFill = document.getElementById('playerFill');
+const enemySprite = document.getElementById('enemySprite');
+const enemyName = document.getElementById('enemyName');
+const wordBubble = document.getElementById('wordBubble');
+const timerFill = document.getElementById('timerFill');
+const startOverlay = document.getElementById('startOverlay');
+const overOverlay = document.getElementById('overOverlay');
+const retryBtn = document.getElementById('retryBtn');
+const bestSpan = document.getElementById('best');
+const resultTitle = document.getElementById('resultTitle');
+const resultDetail = document.getElementById('resultDetail');
+const diffTag = document.getElementById('diffTag');
+
+let score = 0, combo = 0, maxCombo = 0, wave = 1, playerHP = 100;
+let level = 1, maxHP = 150, baseMaxHP = 150; // ← 変更：さいだいHPのきじゅんち(baseMaxHP)を追加
+let running = false;
+let currentVariants = [];   // ← 今OKな書き方のリスト（打つたびにしぼられていく）
+let currentKana = '';
+let typedIndex = 0;
+let timeLimit = 4000, timeLeft = 4000;
+let tickInterval = null;
+// ▼ 追加：音楽ファイルなしで、その場で音をつくる「BGMエンジン」だよ
+let audioCtx = null;
+let masterGain = null;
+let musicMuted = false;
+let bgmTimer = null;
+let currentBgmType = null;
+let bgmStep = 0;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.16;
+  masterGain.connect(audioCtx.destination);
+}
+
+function playNote(freq, dur, type) {
+  if (!audioCtx || musicMuted) return;
+  const osc = audioCtx.createOscillator();
+  osc.type = type;
+  osc.frequency.value = freq;
+  const g = audioCtx.createGain();
+  const t = audioCtx.currentTime;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.5, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g);
+  g.connect(masterGain);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+
+// ▼ 変更：キーボードを叩くような「カタカタ」という打鍵音(オシレーターだけで作る、より確実な方式)
+function playKeyClack() {
+  if (!audioCtx || musicMuted) return;
+  const t = audioCtx.currentTime;
+  // 高い「カチッ」という音(音量アップ)
+  const osc1 = audioCtx.createOscillator();
+  osc1.type = 'square';
+  osc1.frequency.value = 3200 + Math.random() * 600;
+  const g1 = audioCtx.createGain();
+  g1.gain.setValueAtTime(0.0001, t);
+  g1.gain.linearRampToValueAtTime(0.85, t + 0.002);
+  g1.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+  osc1.connect(g1);
+  g1.connect(masterGain);
+  osc1.start(t);
+  osc1.stop(t + 0.04);
+  // ひくい「コトッ」という音(キーボードの土台がなる感じ)
+  const osc2 = audioCtx.createOscillator();
+  osc2.type = 'square';
+  osc2.frequency.value = 180 + Math.random() * 40;
+  const g2 = audioCtx.createGain();
+  g2.gain.setValueAtTime(0.0001, t);
+  g2.gain.linearRampToValueAtTime(0.5, t + 0.002);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+  osc2.connect(g2);
+  g2.connect(masterGain);
+  osc2.start(t);
+  osc2.stop(t + 0.05);
+  // なかくらいの「タッ」という音(からだの部分)
+  const osc3 = audioCtx.createOscillator();
+  osc3.type = 'triangle';
+  osc3.frequency.value = 700 + Math.random() * 150;
+  const g3 = audioCtx.createGain();
+  g3.gain.setValueAtTime(0.0001, t);
+  g3.gain.linearRampToValueAtTime(0.5, t + 0.004);
+  g3.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  osc3.connect(g3);
+  g3.connect(masterGain);
+  osc3.start(t);
+  osc3.stop(t + 0.06);
+}
+
+// ▼ 変更：まちがえたときの「ブブーッ」というブザー音
+function playMissBuzz() {
+  if (!audioCtx || musicMuted) return;
+  const t0 = audioCtx.currentTime;
+  [0, 0.11].forEach(offset => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 130;
+    const g = audioCtx.createGain();
+    const t = t0 + offset;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.75, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+    osc.connect(g);
+    g.connect(masterGain);
+    osc.start(t);
+    osc.stop(t + 0.11);
+    // ぶあつくするための、もう1つひくい音をかさねる
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'square';
+    osc2.frequency.value = 85;
+    const g2 = audioCtx.createGain();
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.linearRampToValueAtTime(0.5, t + 0.01);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+    osc2.connect(g2);
+    g2.connect(masterGain);
+    osc2.start(t);
+    osc2.stop(t + 0.11);
+  });
+}
+
+// ▼ ふつうの敵とたたかうときの、あかるいループ(ドレミファソラシド系)
+const NORMAL_MELODY = [
+  523, 659, 784, 659, 587, 698, 880, 698,
+  523, 659, 784, 988, 880, 698, 587, 523
+];
+// ▼ らすぼすとたたかうときの、ちょっとドキドキするループ(たんおんかい)
+const BOSS_MELODY = [
+  330, 330, 392, 330, 294, 294, 349, 294,
+  330, 392, 440, 392, 349, 330, 294, 262
+];
+
+function startBgm(type) {
+  if (currentBgmType === type) return;
+  currentBgmType = type;
+  bgmStep = 0;
+  clearTimeout(bgmTimer);
+  const pattern = type === 'boss' ? BOSS_MELODY : NORMAL_MELODY;
+  const noteLen = type === 'boss' ? 190 : 230;
+  const oscType = type === 'boss' ? 'sawtooth' : 'triangle';
+  const step = () => {
+    if (currentBgmType !== type) return; // ← べつのBGMにきりかわってたら、ここで止める
+    const freq = pattern[bgmStep % pattern.length];
+    playNote(freq, noteLen / 1000 * 0.9, oscType);
+    bgmStep++;
+    bgmTimer = setTimeout(step, noteLen);
+  };
+  step();
+}
+
+function stopBgm() {
+  currentBgmType = null;
+  clearTimeout(bgmTimer);
+}
+
+let isBoss = false;
+let isBoss2 = false; // ← 追加：10の倍数のウェーブで出る、あたらしい「ボス」かどうか
+let isMidBoss = false; // ← 追加：25の倍数のウェーブで出る「中ボス」かどうか
+let isLastBoss = false;
+let isFinal = false;
+let isWeak = false; // ← 追加：77ぶんの1で出る「よわよわてき」かどうか
+let recentWords = []; // ← 追加：さいきん出た単語をきろくして、かぶりをへらす
+let currentWordLen = 1, enemyHpHits = 1, enemyHpSegSize = 100, enemyHpSegStart = 100; // ← 追加：うった分だけHPをへらすためのようす
+let previousMissed = false, previousWordLenSnapshot = 6; // ← 追加：まえの単語でミスしたか・その長さ
+let pendingNextEntry = null; // ← 追加：先読みしておいた「つぎに出る単語」
+let bonusNextWeak = false, bonusNextTime = false; // ← 追加：レベルアップのごほうびで、つぎのてきにつくとくてん
+let isUltraRare = false; // ← 追加：6767ぶんの1で出る「ちょうげきレア」かどうか
+let isMegaLucky = false; // ← 追加：77777ぶんの67で出る「ちょうちょうげきレア」かどうか
+let isSuperStrong = false; // ← 追加：444444ぶんの4で出る「だいばくはつキング」かどうか
+let isCoinMob = false; // ← 追加：5555ぶんの5で出る、コインをいっぱい落とすモブ
+let missThisWave = 0;
+
+// ▼▼▼ ここが直したところ②：セーブのやり方をふつうのブラウザ用にした ▼▼▼
+// 前は Claude の中だけで使える特別なきのう(window.storage)を使ってたよ。
+// これだと、パソコンにファイルを保存してブラウザで直接開いたときに
+// うまく動かないことがあったの。
+// なので、どんなブラウザでも使える「localStorage」というきのうに変えたよ！
+// これはブラウザ自身が持ってる「メモ帳」みたいなもので、
+// このゲームのファイルを開くたびに、ちゃんと前のスコアを覚えててくれるよ😊
+function loadBest() {
+  try {
+    const saved = localStorage.getItem('gal-battle-best');
+    bestSpan.textContent = saved ? JSON.parse(saved).best : '--';
+  } catch (e) {
+    bestSpan.textContent = '--';
+  }
+}
+function saveBest(s) {
+  try {
+    const saved = localStorage.getItem('gal-battle-best');
+    const cur = saved ? JSON.parse(saved).best : 0;
+    if (s > cur) {
+      localStorage.setItem('gal-battle-best', JSON.stringify({ best: s }));
+    }
+  } catch (e) {}
+}
+loadBest();
+// ▲▲▲ ここまで ▲▲▲
+
+// ▼ 追加：🪙コインと🛒ショップアイテムのしくみ
+const SHOP_ITEMS = [
+  { id: 'kujiticket', icon: '🎫', name: 'くじびきチケット', desc: 'これを買うと、その日にもう1回だけくじびきがひけるようになるよ(1まいで1かい)', cost: 500, isKujiTicket: true },
+  { id: 'divineluckticket', icon: '🔮', name: 'かみレアうんきチケット', desc: 'つかうと、👑神レア以上(神レア・神王レア・？？？？レア)がすこしだけ出やすいくじがひけるよ(1まいで1かい)', cost: 2000, isKujiTicket: true, divineBoost: true },
+  { id: 'heal', icon: '💚', name: 'かいふくポーション', desc: 'つぎの戦闘、さいだいHP+30・全回復スタート', cost: 30 },
+  { id: 'time', icon: '⏱️', name: 'じかんのすな', desc: 'つぎの戦闘ぜんたい、じかんが1.15倍にのびる', cost: 40 },
+  { id: 'levelboost', icon: '⭐', name: 'けいけんちのしょ', desc: 'つぎの戦闘、Lv.3からスタート', cost: 35 },
+  { id: 'shield', icon: '🛡️', name: 'まもりのお守り', desc: 'つぎの戦闘ぜんたい、うけるダメージが20%へる', cost: 50 },
+  { id: 'luck', icon: '🍀', name: 'らっきーのおまもり', desc: 'つぎの戦闘ぜんたい、レアなラッキーイベントが2ばい出やすくなる', cost: 45 },
+  { id: 'scoreboost', icon: '💯', name: 'スコアブースト', desc: 'つぎの戦闘ぜんたい、もらえるスコアが1.25ばいになる', cost: 35 },
+  { id: 'coinboost', icon: '🪙', name: 'コインブースト', desc: 'つぎの戦闘、もらえる🪙コインがふえる', cost: 25 },
+  { id: 'copperpile', icon: '🟤', name: 'どうかのやま', desc: 'つぎの戦闘、けっかにかかわらずコイン+20もらえる', cost: 15 },
+  { id: 'missguard', icon: '🎯', name: 'ミスガード', desc: 'つぎの戦闘、さいしょの1回だけミスしてもダメージゼロ', cost: 55 },
+  { id: 'headstart', icon: '⚡', name: 'げんきスタート', desc: 'つぎの戦闘、スコア+100からスタート', cost: 20 },
+  { id: 'revive', icon: '🔄', name: 'リトライけん', desc: 'つぎの戦闘、たおれても1回だけHP30%で復活できる', cost: 70 },
+  { id: 'heal2', icon: '💎', name: 'だいちのかご', desc: 'つぎの戦闘、さいだいHP+60・全回復スタート（大かいふく）', cost: 55 },
+  { id: 'regen', icon: '🍯', name: 'みつのつぼ', desc: 'つぎの戦闘ぜんたい、5ウェーブごとにHP+10かいふく', cost: 30 },
+  { id: 'bonuscoin', icon: '🎁', name: 'おまけコイン', desc: 'つぎの戦闘、けっかにかかわらず🪙コイン+50もらえる', cost: 15 },
+  { id: 'firstweak', icon: '🏹', name: 'せんこうのちから', desc: 'つぎの戦闘、さいしょの1たいめがぜったい「よわよわ」になる', cost: 25 },
+  { id: 'missflat', icon: '🕶️', name: 'しんぼうのおふだ', desc: 'つぎの戦闘ぜんたい、ミスダメージがれんぞくで増えなくなる', cost: 45 },
+  { id: 'combofast', icon: '🔥', name: 'れんぞくブースト', desc: 'つぎの戦闘ぜんたい、2れんぞくたおすごとにHP回復（3→2に短縮）', cost: 35 },
+  { id: 'rainbow', icon: '🌈', name: 'にじのかけら', desc: 'つぎの戦闘ぜんたい、ステージがずっとにじいろになる', cost: 40 },
+  { id: 'comboguard', icon: '⏳', name: 'セカンドチャンス', desc: 'つぎの戦闘、さいしょの1回だけミスしてもコンボがきれない', cost: 50 },
+  { id: 'restticket', icon: '🛏️', name: 'やすみのふだ', desc: 'つぎの戦闘、さいしょのてきだけじかんが3ばいになる', cost: 20 },
+  { id: 'golden', icon: '👑', name: 'おうごんのかんむり', desc: 'つぎの戦闘ぜんたい、スコア・コイン・ぼうぎょが少しずつぜんぶアップ', cost: 100 },
+  { id: 'expboost', icon: '🎯', name: 'めいちゅうのふだ', desc: 'つぎの戦闘ぜんたい、もらえるEXPが1.3ばいになる', cost: 30 },
+  { id: 'nightbonus', icon: '🌙', name: 'つきよのおまもり', desc: 'つぎの戦闘、スコア+20からスタート', cost: 25 },
+  { id: 'shortword', icon: '🍃', name: 'かるさのおふだ', desc: 'つぎの戦闘ぜんたい、みじかい単語がすこし出やすくなる', cost: 35 },
+  { id: 'firststrike', icon: '🥇', name: 'はじめのいちげき', desc: 'つぎの戦闘、さいしょのてきをたおしたときのスコアが3ばいに', cost: 25 },
+  { id: 'comboamp', icon: '💪', name: 'ちからのゆびわ', desc: 'つぎの戦闘ぜんたい、コンボ回復でかいふくするHPが2ばいになる', cost: 40 },
+  { id: 'windboost', icon: '🌬️', name: 'かぜのごか', desc: 'つぎの戦闘ぜんたい、じかんがさらに1.1ばいになる（ほかのじかんアイテムとかさねられる）', cost: 30 },
+  { id: 'legendsword', icon: '💫', name: 'でんせつのつるぎ', desc: '★レア：つぎの戦闘ぜんたい、ダメージが大はばにへる＆ミスダメージが増えなくなる', cost: 200, rarity: 'rare' },
+  { id: 'spacetimegem', icon: '🌌', name: 'じくうのほうせき', desc: '★レア：つぎの戦闘ぜんたい、じかんが1.3ばいさらにのびる', cost: 250, rarity: 'rare' },
+  { id: 'phantompearl', icon: '🦄', name: 'げんそうのしんじゅ', desc: '★レア：つぎの戦闘、wave5でぜったいちょうちょうげきレアが発生する', cost: 300, rarity: 'rare' },
+  { id: 'divinemark', icon: '🔱', name: 'かみのちからのしるし', desc: '★レア：つぎの戦闘ぜんたい、スコア1.6ばい＋コインアップ＋復活2回ぶん', cost: 350, rarity: 'rare' },
+  { id: 'silvercoinjar', icon: '🥈', name: 'ぎんかのつぼ', desc: '★レア：つぎの戦闘ぜんたい、もらえるコインが1.2ばいになる', cost: 70, rarity: 'rare' },
+  { id: 'miraclerobe', icon: '🌟', name: 'きせきのはごろも', desc: '🌟げきレア：つぎの戦闘ぜんたい、うけるダメージが半分に＋復活3回ぶん（1こで5かいぶんつかえる）', cost: 500, rarity: 'ultra' },
+  { id: 'infinitehourglass', icon: '♾️', name: 'むげんのすなどけい', desc: '🌟げきレア：つぎの戦闘ぜんたい、じかんが1.5ばいさらにのびる（1こで5かいぶんつかえる）', cost: 600, rarity: 'ultra' },
+  { id: 'goldenchest', icon: '💰', name: 'おうごんのたからばこ', desc: '🌟げきレア：つぎの戦闘、けっかにかかわらずコイン+300もらえる（1こで5かいぶんつかえる）', cost: 450, rarity: 'ultra' },
+  { id: 'goldcoinshower', icon: '🌧️', name: 'きんかのシャワー', desc: '🌟げきレア：つぎの戦闘、けっかにかかわらずコイン+150もらえる（1こで5かいぶんつかえる）', cost: 100, rarity: 'ultra' },
+  { id: 'truekingcrown', icon: '👑', name: 'しんげきのおうかん', desc: '🌟げきレア：つぎの戦闘ぜんたい、スコア2ばい＋コインアップ＋ぼうぎょ大アップ＋復活3回ぶん＋ラッキー2ばい（さいきょうアイテム）（1こで5かいぶんつかえる）', cost: 1000, rarity: 'ultra' },
+  { id: 'dragonpower', icon: '🐉', name: 'げんしのりゅうのちから', desc: '💠超激レア：つぎの戦闘ぜんたい、スコア3ばい＋ダメージが大はばへる（1こで5かいぶんつかえる）', cost: 2500, rarity: 'legendary' },
+  { id: 'timestop', icon: '⏰', name: 'じかんていしのほう', desc: '💠超激レア：つぎの戦闘ぜんたい、じかんが2ばいになる（1こで5かいぶんつかえる）', cost: 3000, rarity: 'legendary' },
+  { id: 'godblessing', icon: '👼', name: 'かみのめぐみ', desc: '💠超激レア：つぎの戦闘ぜんたい、スコア・コイン・ぼうぎょ・じかん・ラッキー・復活、ぜんぶが最大でつよくなる（げんきょくのアイテム）（1こで5かいぶんつかえる）', cost: 5000, rarity: 'legendary' },
+  { id: 'dragonscale', icon: '🐉', name: 'おうごんのりゅうのうろこ', desc: '💠超激レア：つぎの戦闘ぜんたい、もらえるコインが1.5ばいになる（1こで5かいぶんつかえる）', cost: 1200, rarity: 'legendary' },
+  { id: 'hitreduceminor', icon: '🗡️', name: 'れんげきのおうぎ', desc: '💠超激レア：つぎの戦闘ぜんたい、ボス・ラスボスをたおす回数が1回へる（4回→3回、3回→2回、2回→1回）（1こで5かいぶんつかえる）', cost: 1500, rarity: 'legendary' },
+  { id: 'creatorpower', icon: '🕊️', name: 'そうぞうしゃのちから', desc: '👑神レア：ぜんアイテムのうえをいく、ゲームさいきょうのちから。すべてのこうかが、さらにけたちがいにつよくなる', cost: 20000, rarity: 'divine' },
+  { id: 'onehitkill', icon: '⚔️', name: 'いちげきひっさつのおうぎ', desc: '👑神レア：つぎの戦闘ぜんたい、ボス・ラスボスをたおす回数がへる（3回・2回→1回、4回→2回）', cost: 8000, rarity: 'divine' },
+  { id: 'halfwave', icon: '🌀', name: 'じくうのねじれ', desc: '👑神レア：つぎの戦闘ぜんたい、さいごのウェーブすうが半分になる（クリアまでのみちのりが短く！）', cost: 6000, rarity: 'divine' },
+  { id: 'infinitegolddrop', icon: '💧', name: 'むげんのこがねのしずく', desc: '👑神レア：つぎの戦闘ぜんたい、もらえるコインが2ばい＋コイン+800もらえる', cost: 9000, rarity: 'divine' },
+  { id: 'powertransfer', icon: '🔄', name: 'ちからのてんい', desc: '👑神レア：つぎの戦闘ぜんたい、てきの強さがぜんいん半分に＋じぶんのちから（スコア）が2ばいになる', cost: 7000, rarity: 'divine' },
+  { id: 'godkingpower', icon: '⚡', name: 'しんおうのちから', desc: '⚡神王レア：れあどさいこう。すべてのこうかが、ここまでのどのアイテムよりもつよくなる。ボス・ラスボスのたおす回数もぜんぶ1回に', cost: 50000, rarity: 'godking' },
+  { id: 'ultimatepower', icon: '🌠', name: 'きわみのちから', desc: '🌠神王レア：「超むずかしい」クリアしゃだけがてにできる、げんてんのちから。すべてのこうかが、しんおうのちからをさらに上回る', cost: 100000, rarity: 'godking', specialUnlock: 'EXTREME' },
+  { id: 'truedragonblessing', icon: '🐲', name: 'しんりゅうのめぐみ', desc: '🐲神王レア：「超むずかしい」クリアしゃだけがてにできる、しんりゅうのちから。スコア・コイン・ラッキーがけたはずれにつよくなる', cost: 80000, rarity: 'godking', specialUnlock: 'EXTREME' },
+  { id: 'phantompower', icon: '🌫️', name: 'まぼろしのちから', desc: '🌫️？？？？レア：くじびきでしか手に入らない、げんえいのちから。すべてのこうかが、ここまでのどのアイテムをもうわまわる、ゲームさいてっぺんの1こ', cost: 300000, rarity: 'phantom', kujiOnly: true }
+];
+let coins = 0;
+let pendingItems = {};
+let equippedItems = {}; // ← 追加：じぶんで「そうびする」とえらんだアイテム(id: true)
+let itemTimeBonus = 1, itemDmgReduction = 1; // ← このプレイ中だけつかう、アイテムのこうか
+let itemLuckMult = 1, itemScoreMult = 1, itemCoinBonus = false, itemMissGuardActive = false, itemReviveCharges = 0;
+let itemExpMult = 1, itemBonusScoreFlat = 0, itemShortWordBias = false, itemFirstStrikePending = false, itemComboHealAmount = 12;
+let itemPhantomPearlActive = false;
+let itemHitReductionActive = false; // ← 追加：⚔️いちげきひっさつのおうぎのこうか
+let itemHitReductionMinorActive = false; // ← 追加：🗡️れんげきのおうぎのこうか
+let itemHitReductionMaxActive = false; // ← 追加：⚡しんおうのちからのこうか(ぜんぶ1回になる)
+let itemHalveWaveActive = false; // ← 追加：🌀じくうのねじれのこうか
+let itemBonusCoinFlat = 0, itemFirstWeakPending = false, itemMissFlatActive = false, itemComboHealInterval = 3;
+let itemCoinMult = 1; // ← 追加：コインぜんたいへの倍率
+let itemRainbowActive = false, itemComboGuardActive = false, itemRestTicketActive = false, itemRegenActive = false;
+
+function loadCoins() {
+  try { coins = parseInt(localStorage.getItem('gal-battle-coins') || '0', 10) || 0; } catch (e) { coins = 0; }
+}
+function saveCoins() {
+  try { localStorage.setItem('gal-battle-coins', String(coins)); } catch (e) {}
+}
+function loadPendingItems() {
+  try {
+    const raw = localStorage.getItem('gal-battle-pending-items');
+    pendingItems = raw ? JSON.parse(raw) : {};
+  } catch (e) { pendingItems = {}; }
+}
+function savePendingItems() {
+  try { localStorage.setItem('gal-battle-pending-items', JSON.stringify(pendingItems)); } catch (e) {}
+}
+function loadEquippedItems() {
+  try {
+    const raw = localStorage.getItem('gal-battle-equipped-items');
+    equippedItems = raw ? JSON.parse(raw) : {};
+  } catch (e) { equippedItems = {}; }
+}
+function saveEquippedItems() {
+  try { localStorage.setItem('gal-battle-equipped-items', JSON.stringify(equippedItems)); } catch (e) {}
+}
+function toggleEquip(id) {
+  if (equippedItems[id]) {
+    delete equippedItems[id]; // ← そうびをはずす
+  } else if ((pendingItems[id] || 0) > 0) {
+    equippedItems[id] = true; // ← そうびする(もちものがあるときだけ)
+  }
+  saveEquippedItems();
+  renderShop();
+}
+function updateCoinUI() {
+  document.getElementById('coinDisplay').textContent = coins;
+  document.getElementById('shopCoinDisplay').textContent = coins;
+}
+// ▼ 追加：🎫まいにちくじのしくみ(むりょう・1日1回)
+const KUJI_WEIGHTS = { coin: 25, normal: 55, rare: 15, ultra: 4, legendary: 0.8, divine: 0.15, godking: 0.05, phantom: 0.01 };
+// ▼ 追加：2月29日(うるう日)せんよう、げきレア以上がかなり出やすいかくりつひょう
+const LEAPDAY_KUJI_WEIGHTS = { coin: 10, normal: 20, rare: 20, ultra: 20, legendary: 15, divine: 8, godking: 5, phantom: 2 };
+function getTodayStringKuji() {
+  const d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+function hasDrawnKujiToday() {
+  try { return localStorage.getItem('gal-battle-kuji-lastdraw') === getTodayStringKuji(); } catch (e) { return false; }
+}
+function markDrawnKujiToday() {
+  try { localStorage.setItem('gal-battle-kuji-lastdraw', getTodayStringKuji()); } catch (e) {}
+}
+// ▼ 追加：🎫くじびきチケットのしくみ(500コインで買うと、1日1回のせいげんをこえてもう1回ひける)
+let kujiTickets = 0;
+let divineLuckTickets = 0; // ← 追加：かみレアうんきチケットのかず
+function loadDivineLuckTickets() {
+  try { divineLuckTickets = parseInt(localStorage.getItem('gal-battle-divine-luck-tickets') || '0', 10) || 0; } catch (e) { divineLuckTickets = 0; }
+}
+function saveDivineLuckTickets() {
+  try { localStorage.setItem('gal-battle-divine-luck-tickets', String(divineLuckTickets)); } catch (e) {}
+}
+loadDivineLuckTickets();
+// ▼ 追加：かみレアうんきチケットの、すこしだけ神レア以上が出やすいかくりつひょう
+const DIVINE_BOOST_KUJI_WEIGHTS = { coin: 25, normal: 55, rare: 15, ultra: 4, legendary: 0.8, divine: 0.6, godking: 0.2, phantom: 0.03 };
+function loadKujiTickets() {
+  try { kujiTickets = parseInt(localStorage.getItem('gal-battle-kuji-tickets') || '0', 10) || 0; } catch (e) { kujiTickets = 0; }
+}
+function saveKujiTickets() {
+  try { localStorage.setItem('gal-battle-kuji-tickets', String(kujiTickets)); } catch (e) {}
+}
+loadKujiTickets();
+function updateKujiUI() {
+  const btn = document.getElementById('drawKujiBtn');
+  const ticketLine = document.getElementById('kujiTicketDisplay');
+  if (ticketLine) ticketLine.textContent = kujiTickets;
+  if (isLeapDay(new Date())) {
+    // ▼ 追加：2月29日は、チケットなしで無限にひける
+    btn.disabled = false;
+    btn.textContent = '🌟 うるう日！無限にひける！';
+  } else if (hasDrawnKujiToday() && kujiTickets <= 0) {
+    btn.disabled = true;
+    btn.textContent = '🕛 今日はもうひいたよ';
+  } else if (hasDrawnKujiToday() && kujiTickets > 0) {
+    btn.disabled = false;
+    btn.textContent = '🎫 チケットでひく（のこり' + kujiTickets + '）';
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🎫 くじをひく';
+  }
+  // ▼ 追加：かみレアうんきチケットのボタンひょうじ
+  const divineLine = document.getElementById('divineLuckTicketDisplay');
+  if (divineLine) divineLine.textContent = divineLuckTickets;
+  const divineBtn = document.getElementById('drawKujiDivineBtn');
+  if (divineBtn) {
+    if (divineLuckTickets > 0) {
+      divineBtn.disabled = false;
+      divineBtn.textContent = '🔮 うんきアップでひく（のこり' + divineLuckTickets + '）';
+    } else {
+      divineBtn.disabled = true;
+      divineBtn.textContent = '🔮 うんきチケットがない';
+    }
+  }
+}
+function pickRarityFromWeights(weights) {
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (const [rarity, w] of Object.entries(weights)) {
+    if (r < w) return rarity;
+    r -= w;
+  }
+  return 'normal';
+}
+function pickKujiRarity() {
+  return pickRarityFromWeights(KUJI_WEIGHTS);
+}
+function drawKuji() {
+  const onLeapDay = isLeapDay(new Date());
+  if (!onLeapDay && hasDrawnKujiToday()) {
+    if (kujiTickets > 0) {
+      // ▼ 追加：今日の無料ぶんはつかいきってても、チケットがあればひける
+      kujiTickets--;
+      saveKujiTickets();
+      popup('🎫 チケットをつかった！のこり' + kujiTickets + 'まい', 90, 150);
+    } else {
+      popup('🕛 今日はもうくじをひいたよ！また明日ね', 60, 200);
+      return;
+    }
+  } else if (!onLeapDay) {
+    markDrawnKujiToday();
+  }
+  updateKujiUI();
+  runKujiDraw(() => pickRarityFromWeights(onLeapDay ? LEAPDAY_KUJI_WEIGHTS : KUJI_WEIGHTS));
+}
+function drawKujiDivineBoost() {
+  if (divineLuckTickets <= 0) {
+    popup('🔮かみレアうんきチケットがないよ！ショップで買ってね', 60, 200);
+    return;
+  }
+  divineLuckTickets--;
+  saveDivineLuckTickets();
+  updateKujiUI();
+  runKujiDraw(() => pickRarityFromWeights(DIVINE_BOOST_KUJI_WEIGHTS));
+}
+function runKujiDraw(pickFn) {
+  const box = document.getElementById('kujiBox');
+  box.classList.remove('opening');
+  void box.offsetWidth;
+  box.classList.add('opening');
+  document.getElementById('kujiResult').textContent = '';
+
+  setTimeout(() => {
+    const rarity = pickFn();
+    if (rarity === 'coin') {
+      // ▼ 追加：くじでコインがあたったとき
+      const coinAmount = 50 + Math.floor(Math.random() * 451); // 50〜500コイン
+      coins += coinAmount;
+      saveCoins();
+      addAchieveCoinsEarned(coinAmount); // ← 追加：🎯かせいだコインのきろく
+      updateCoinUI();
+      document.getElementById('kujiResult').innerHTML =
+        '🎉 <b style="color:#7fff8a;">🪙コイン</b> があたった！<br>' +
+        '🪙 <b>+' + coinAmount + 'コイン</b> をゲット！';
+      box.textContent = '🎊';
+      return;
+    }
+    const pool = SHOP_ITEMS.filter(it => (it.rarity || 'normal') === rarity && !it.isKujiTicket);
+    const item = pool[Math.floor(Math.random() * pool.length)];
+    const addAmount = (rarity === 'ultra' || rarity === 'legendary') ? 5 : 1;
+    pendingItems[item.id] = (pendingItems[item.id] || 0) + addAmount;
+    savePendingItems();
+    const rarityLabel = phantomRevealText({ phantom: '🌫️？？？？レア', divine: '👑神レア', godking: '⚡神王レア', legendary: '💠超激レア', ultra: '🌟げきレア', rare: '★レア', normal: 'ふつう' }[rarity]);
+    document.getElementById('kujiResult').innerHTML =
+      '🎉 <b style="color:#ffd23f;">' + rarityLabel + '</b> があたった！<br>' +
+      item.icon + ' <b>' + item.name + '</b> を てにいれた！';
+    box.textContent = '🎊';
+  }, 700);
+}
+
+// ▼ 追加：どのボタンにでもつかえる「5秒長押しで連続じっこう」のきょうつうしくみ
+function attachLongPress(btn, actionFn, canContinueFn, holdMs, startIntervalMs, minIntervalMs, accelStep) {
+  minIntervalMs = minIntervalMs || 60;   // ← どんなに速くなっても、これいじょうは速くならない下限
+  accelStep = accelStep || 40;           // ← 1回ごとに、これだけかんかくをちぢめる
+  let holdTimer = null, repeatTimer = null, currentInterval = startIntervalMs;
+  function stop() {
+    clearTimeout(holdTimer);
+    clearTimeout(repeatTimer);
+    holdTimer = null;
+    repeatTimer = null;
+    currentInterval = startIntervalMs; // ← つぎに押したときは、また普通の速さからスタート
+  }
+  function scheduleNext() {
+    repeatTimer = setTimeout(() => {
+      if (canContinueFn && !canContinueFn()) { stop(); return; }
+      actionFn();
+      currentInterval = Math.max(minIntervalMs, currentInterval - accelStep); // ← どんどん速くする
+      scheduleNext();
+    }, currentInterval);
+  }
+  function start() {
+    stop();
+    holdTimer = setTimeout(() => {
+      currentInterval = startIntervalMs;
+      scheduleNext();
+    }, holdMs);
+  }
+  btn.addEventListener('mousedown', start);
+  btn.addEventListener('touchstart', start);
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', stop);
+  btn.addEventListener('touchend', stop);
+  btn.addEventListener('touchcancel', stop);
+  // ▼ 追加：ショップのボタンは購入のたびに作りなおされるので、
+  // documentがわでも「はなす」をきいて、かくじつにストップできるようにする
+  document.addEventListener('mouseup', stop);
+  document.addEventListener('touchend', stop);
+  document.addEventListener('touchcancel', stop);
+}
+
+
+// ▼ 追加：🎯一生に一回だけの、たっせいミッション(たおした数はずっとつみあがる・リセットされない)
+const ACHIEVEMENTS = [
+  // ▼ たおした数(kill)
+  { id: 'kill1', icon: '🔰', name: 'はじめての1たい', target: 1, reward: 50, type: 'kill' },
+  { id: 'kill5', icon: '🗡️', name: 'てきを5たいたおす', target: 5, reward: 80, type: 'kill' },
+  { id: 'kill10', icon: '⚔️', name: 'てきを10たいたおす', target: 10, reward: 150, type: 'kill' },
+  { id: 'kill25', icon: '🪓', name: 'てきを25たいたおす', target: 25, reward: 280, type: 'kill' },
+  { id: 'kill50', icon: '🏹', name: 'てきを50たいたおす', target: 50, reward: 400, type: 'kill' },
+  { id: 'kill100', icon: '🏆', name: 'てきを100たいたおす', target: 100, reward: 800, type: 'kill' },
+  { id: 'kill200', icon: '🎯', name: 'てきを200たいたおす', target: 200, reward: 1200, type: 'kill' },
+  { id: 'kill300', icon: '🎖️', name: 'てきを300たいたおす', target: 300, reward: 1500, type: 'kill' },
+  { id: 'kill500', icon: '🥇', name: 'てきを500たいたおす', target: 500, reward: 2500, type: 'kill' },
+  { id: 'kill750', icon: '🥈', name: 'てきを750たいたおす', target: 750, reward: 3500, type: 'kill' },
+  { id: 'kill1000', icon: '💎', name: 'てきを1000たいたおす', target: 1000, reward: 5000, type: 'kill' },
+  { id: 'kill1500', icon: '💠', name: 'てきを1500たいたおす', target: 1500, reward: 7000, type: 'kill' },
+  { id: 'kill2000', icon: '🌟', name: 'てきを2000たいたおす', target: 2000, reward: 9000, type: 'kill' },
+  { id: 'kill3000', icon: '🌠', name: 'てきを3000たいたおす', target: 3000, reward: 13000, type: 'kill' },
+  { id: 'kill5000', icon: '👑', name: 'てきを5000たいたおす', target: 5000, reward: 20000, type: 'kill' },
+  // ▼ ボスをたおした数(boss)
+  { id: 'boss1', icon: '👹', name: 'はじめてボスをたおす', target: 1, reward: 300, type: 'boss' },
+  { id: 'boss3', icon: '👺', name: 'ボスを3たいたおす', target: 3, reward: 500, type: 'boss' },
+  { id: 'boss5', icon: '🐺', name: 'ボスを5たいたおす', target: 5, reward: 700, type: 'boss' },
+  { id: 'boss10', icon: '👑', name: 'ボスを10たいたおす', target: 10, reward: 1000, type: 'boss' },
+  { id: 'boss20', icon: '🦂', name: 'ボスを20たいたおす', target: 20, reward: 1600, type: 'boss' },
+  { id: 'boss30', icon: '🐲', name: 'ボスを30たいたおす', target: 30, reward: 2000, type: 'boss' },
+  { id: 'boss50', icon: '⚡', name: 'ボスを50たいたおす', target: 50, reward: 3000, type: 'boss' },
+  { id: 'boss75', icon: '🌩️', name: 'ボスを75たいたおす', target: 75, reward: 4500, type: 'boss' },
+  { id: 'boss100', icon: '🔥', name: 'ボスを100たいたおす', target: 100, reward: 6000, type: 'boss' },
+  { id: 'boss150', icon: '☄️', name: 'ボスを150たいたおす', target: 150, reward: 9000, type: 'boss' },
+  // ▼ むずかしさクリア(diffClears：いくつのむずかしさをクリアしたか)
+  { id: 'diff1', icon: '🔓', name: 'はじめてクリアする', target: 1, reward: 200, type: 'diffClears' },
+  { id: 'diff2', icon: '🥉', name: '2しゅるいのむずかしさをクリア', target: 2, reward: 500, type: 'diffClears' },
+  { id: 'diff3', icon: '🥈', name: '3しゅるいのむずかしさをクリア', target: 3, reward: 1000, type: 'diffClears' },
+  { id: 'diff4', icon: '🥇', name: '4しゅるいのむずかしさをクリア', target: 4, reward: 2000, type: 'diffClears' },
+  { id: 'diff5', icon: '🏅', name: '全むずかしさをクリア(コンプリート)', target: 5, reward: 5000, type: 'diffClears' },
+  // ▼ かせいだコイン(coinsEarned：これまでにかせいだコインの合計)
+  { id: 'coin100', icon: '🪙', name: '合計100コインかせぐ', target: 100, reward: 30, type: 'coinsEarned' },
+  { id: 'coin500', icon: '🪙', name: '合計500コインかせぐ', target: 500, reward: 100, type: 'coinsEarned' },
+  { id: 'coin1000', icon: '💰', name: '合計1000コインかせぐ', target: 1000, reward: 250, type: 'coinsEarned' },
+  { id: 'coin2500', icon: '💰', name: '合計2500コインかせぐ', target: 2500, reward: 500, type: 'coinsEarned' },
+  { id: 'coin5000', icon: '💰', name: '合計5000コインかせぐ', target: 5000, reward: 1000, type: 'coinsEarned' },
+  { id: 'coin10000', icon: '🏦', name: '合計10000コインかせぐ', target: 10000, reward: 2000, type: 'coinsEarned' },
+  { id: 'coin25000', icon: '🏦', name: '合計25000コインかせぐ', target: 25000, reward: 4000, type: 'coinsEarned' },
+  { id: 'coin50000', icon: '🏛️', name: '合計50000コインかせぐ', target: 50000, reward: 8000, type: 'coinsEarned' },
+  { id: 'coin100000', icon: '🏛️', name: '合計100000コインかせぐ', target: 100000, reward: 15000, type: 'coinsEarned' },
+  { id: 'coin250000', icon: '👑', name: '合計250000コインかせぐ', target: 250000, reward: 30000, type: 'coinsEarned' },
+  { id: 'coin300000', icon: '👑', name: '合計30まんコインかせぐ', target: 300000, reward: 40000, type: 'coinsEarned' },
+  { id: 'coin500000', icon: '💎', name: '合計50まんコインかせぐ', target: 500000, reward: 70000, type: 'coinsEarned' },
+  { id: 'coin1000000', icon: '💎', name: '合計100まんコインかせぐ', target: 1000000, reward: 150000, type: 'coinsEarned' },
+  { id: 'coin50000000', icon: '🌟', name: '合計5000まんコインかせぐ', target: 50000000, reward: 3000000, type: 'coinsEarned' },
+  { id: 'coin100000000', icon: '🌠', name: '合計1おくコインかせぐ', target: 100000000, reward: 5000000, type: 'coinsEarned' },
+  { id: 'coin3000000000', icon: '🌌', name: '合計30おくコインかせぐ', target: 3000000000, reward: 15000000, type: 'coinsEarned' },
+  { id: 'coin10000000000', icon: '👑', name: '合計100おくコインかせぐ', target: 10000000000, reward: 25000000, type: 'coinsEarned' },
+  { id: 'coin100000000000', icon: '👑', name: '合計1000おくコインかせぐ', target: 100000000000, reward: 35000000, type: 'coinsEarned' },
+  { id: 'earn1000000000000', icon: '💸', name: '合計1ちょうコインをあつめる', target: 1000000000000, reward: 50000000, type: 'coinsEarned' },
+  // ▼ ショップでの購入回数(purchases)
+  { id: 'buy1', icon: '🛍️', name: 'はじめてアイテムを買う', target: 1, reward: 30, type: 'purchases' },
+  { id: 'buy3', icon: '🛍️', name: 'アイテムを3かい買う', target: 3, reward: 80, type: 'purchases' },
+  { id: 'buy5', icon: '🛒', name: 'アイテムを5かい買う', target: 5, reward: 150, type: 'purchases' },
+  { id: 'buy10', icon: '🛒', name: 'アイテムを10かい買う', target: 10, reward: 300, type: 'purchases' },
+  { id: 'buy20', icon: '📦', name: 'アイテムを20かい買う', target: 20, reward: 600, type: 'purchases' },
+  { id: 'buy30', icon: '📦', name: 'アイテムを30かい買う', target: 30, reward: 1000, type: 'purchases' },
+  { id: 'buy50', icon: '🏪', name: 'アイテムを50かい買う', target: 50, reward: 1800, type: 'purchases' },
+  { id: 'buy75', icon: '🏪', name: 'アイテムを75かい買う', target: 75, reward: 2800, type: 'purchases' },
+  { id: 'buy100', icon: '🏬', name: 'アイテムを100かい買う', target: 100, reward: 4000, type: 'purchases' },
+  { id: 'buy150', icon: '🏬', name: 'アイテムを150かい買う', target: 150, reward: 6000, type: 'purchases' }
+];
+// ▼ 追加：ミッションのカテゴリごとの見出し・いろ分け(見やすくするため)
+const ACHIEVE_CATEGORY_INFO = {
+  kill: { label: '⚔️ たおした数', color: '#ff8a3c' },
+  boss: { label: '👑 ボスをたおした数', color: '#ff2e93' },
+  diffClears: { label: '🏅 むずかしさクリア', color: '#00e5ff' },
+  coinsEarned: { label: '🪙 かせいだコイン', color: '#ffd23f' },
+  purchases: { label: '🛒 ショップでの購入回数', color: '#7fff8a' },
+  coinsSpent: { label: '💸 つかったコイン', color: '#c07fff' }
+};
+let achieveProgress = { kill: 0, boss: 0, coinsEarned: 0, purchases: 0, clearedDiffs: {} };
+let achieveClaimed = {}; // ← { achievementId: true }（一度たっせいしたら、ずっとのこる）
+function getAchieveTypeValue(type) {
+  if (type === 'diffClears') return Object.keys(achieveProgress.clearedDiffs || {}).length;
+  return achieveProgress[type] || 0;
+}
+function loadAchieveState() {
+  try {
+    achieveProgress = JSON.parse(localStorage.getItem('gal-battle-achieve-progress') || '{"kill":0,"boss":0,"coinsEarned":0,"purchases":0,"clearedDiffs":{}}');
+    achieveClaimed = JSON.parse(localStorage.getItem('gal-battle-achieve-claimed') || '{}');
+  } catch (e) { achieveProgress = { kill: 0, boss: 0, coinsEarned: 0, purchases: 0, clearedDiffs: {} }; achieveClaimed = {}; }
+}
+function saveAchieveState() {
+  try {
+    localStorage.setItem('gal-battle-achieve-progress', JSON.stringify(achieveProgress));
+    localStorage.setItem('gal-battle-achieve-claimed', JSON.stringify(achieveClaimed));
+  } catch (e) {}
+}
+loadAchieveState();
+function addAchieveKillProgress() {
+  achieveProgress.kill++;
+  saveAchieveState();
+}
+function addAchieveBossProgress() {
+  achieveProgress.boss++;
+  saveAchieveState();
+}
+function addAchieveCoinsEarned(amount) {
+  achieveProgress.coinsEarned = (achieveProgress.coinsEarned || 0) + amount;
+  saveAchieveState();
+}
+function addAchievePurchase() {
+  achieveProgress.purchases = (achieveProgress.purchases || 0) + 1;
+  saveAchieveState();
+}
+function addAchieveCoinsSpent(amount) {
+  achieveProgress.coinsSpent = (achieveProgress.coinsSpent || 0) + amount;
+  saveAchieveState();
+}
+function addAchieveDiffCleared(difficulty) {
+  if (!achieveProgress.clearedDiffs) achieveProgress.clearedDiffs = {};
+  achieveProgress.clearedDiffs[difficulty] = true;
+  saveAchieveState();
+}
+function claimAchievement(id) {
+  const a = ACHIEVEMENTS.find(x => x.id === id);
+  if (!a) return;
+  if (achieveClaimed[id]) return;
+  if (getAchieveTypeValue(a.type) < a.target) return;
+  achieveClaimed[id] = true;
+  coins += a.reward;
+  saveCoins();
+  saveAchieveState();
+  updateCoinUI();
+  renderMissions();
+  popup('🎉ミッションたっせい！🪙+' + a.reward, 100, 200);
+}
+// ▼ 追加：おおきな数字を「万・億・兆」でみやすく表示するかんすう(レイアウトくずれふせぎ)
+function formatJPNumber(n) {
+  if (n >= 1e12) {
+    const v = n / 1e12;
+    return (Number.isInteger(v) ? v : v.toFixed(1)) + 'ちょう';
+  }
+  if (n >= 1e8) {
+    const v = n / 1e8;
+    return (Number.isInteger(v) ? v : v.toFixed(1)) + 'おく';
+  }
+  if (n >= 1e4) {
+    const v = n / 1e4;
+    return (Number.isInteger(v) ? v : v.toFixed(1)) + 'まん';
+  }
+  return String(n);
+}
+function renderMissions() {
+  const list = document.getElementById('missionList');
+  list.innerHTML = '';
+  let lastType = null;
+  ACHIEVEMENTS.forEach(a => {
+    if (a.type !== lastType) {
+      // ▼ 追加：カテゴリがかわるたびに、見出しをはさむ
+      lastType = a.type;
+      const info = ACHIEVE_CATEGORY_INFO[a.type] || { label: a.type, color: '#fff' };
+      const header = document.createElement('div');
+      header.className = 'achieveCategoryHeader';
+      header.style.color = info.color;
+      header.textContent = info.label;
+      list.appendChild(header);
+    }
+    const progress = Math.min(a.target, getAchieveTypeValue(a.type));
+    const done = progress >= a.target;
+    const claimed = !!achieveClaimed[a.id];
+    const catColor = (ACHIEVE_CATEGORY_INFO[a.type] || {}).color || '#7fff8a';
+    const row = document.createElement('div');
+    row.className = 'achieveItem' + (done ? ' done' : '');
+    row.innerHTML =
+      '<div class="achieveIcon">' + (claimed ? '✅' : a.icon) + '</div>' +
+      '<div class="achieveInfo">' +
+        '<div class="achieveName">' + a.name + '（🪙' + formatJPNumber(a.reward) + '）</div>' +
+        '<div class="achieveProgress">' + formatJPNumber(progress) + ' / ' + formatJPNumber(a.target) + '</div>' +
+        '<div class="achieveBarTrack"><div class="achieveBarFill" style="width:' + (progress / a.target * 100) + '%; background: linear-gradient(90deg, ' + catColor + ', #00c9a0);"></div></div>' +
+      '</div>' +
+      '<button class="achieveClaimBtn' + (claimed ? ' claimed' : '') + '" data-id="' + a.id + '" ' + ((!done || claimed) ? 'disabled' : '') + '>' + (claimed ? '✅ずみ' : 'うけとる') + '</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.achieveClaimBtn').forEach(btn => {
+    btn.addEventListener('click', () => claimAchievement(btn.dataset.id));
+  });
+}
+
+// ▼ 追加：げつまつセール(20%オフ)・おおみそかセール(半額)のしくみ
+function isLastDayOfMonth(d) {
+  const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  return tomorrow.getDate() === 1; // ← あすが1日なら、今日は月末
+}
+function isOomisoka(d) {
+  return d.getMonth() === 11 && d.getDate() === 31; // ← 12月31日
+}
+function isLeapDay(d) {
+  return d.getMonth() === 1 && d.getDate() === 29; // ← 2月29日(うるう日)
+}
+function getShopDiscountMultiplier() {
+  const d = new Date();
+  if (isLeapDay(d)) return 0.05;        // ← うるう日は95%オフ(5%のねだんに)
+  if (isOomisoka(d)) return 0.5;       // ← おおみそかは半額
+  if (isLastDayOfMonth(d)) return 0.8; // ← 月のさいごの日は20%オフ
+  return 1;
+}
+function getDiscountedCost(baseCost) {
+  return Math.max(1, Math.round(baseCost * getShopDiscountMultiplier()));
+}
+function getSaleLabel() {
+  const d = new Date();
+  if (isLeapDay(d)) return '🌟うるう日ちょう激安セール！95%オフ！';
+  if (isOomisoka(d)) return '🎉半額セール！';
+  if (isLastDayOfMonth(d)) return '🎊月末セール！20%オフ！';
+  return null;
+}
+
+function renderShop() {
+  const list = document.getElementById('shopItemList');
+  list.innerHTML = '';
+  const discMult = getShopDiscountMultiplier();
+  const onSale = discMult < 1;
+  const saleLabel = getSaleLabel();
+  const saleBanner = document.getElementById('shopSaleBanner');
+  if (saleBanner) saleBanner.textContent = saleLabel || '';
+  SHOP_ITEMS.forEach(item => {
+    const owned = pendingItems[item.id] || 0;
+    if (item.kujiOnly && owned === 0) return; // ← 追加：？？？？レアは、まだ持ってないときはショップに出さない
+    const price = getDiscountedCost(item.cost);
+    const priceText = onSale ? '（<s style="opacity:0.6;">🪙' + item.cost + '</s> 🪙' + price + '）' : '（🪙' + item.cost + '）';
+    if (item.isKujiTicket) {
+      // ▼ 追加：くじびきチケットは、せんとうアイテムとちがう見せかたにする(そうびボタンなし)
+      const row = document.createElement('div');
+      row.className = 'shopItem kujiTicketItem';
+      const ticketCount = item.divineBoost ? divineLuckTickets : kujiTickets;
+      row.innerHTML =
+        '<div class="shopItemIcon">' + item.icon + '</div>' +
+        '<div class="shopItemInfo">' +
+          '<div class="shopItemName">' + phantomRevealText(item.name) + priceText + '</div>' +
+          '<div class="shopItemDesc">' + phantomRevealText(item.desc) + '</div>' +
+          '<div class="shopItemOwned">🎫 もっているチケット：' + ticketCount + 'まい</div>' +
+        '</div>' +
+        '<div class="shopBtnCol">' +
+          '<button class="shopBuyBtn" data-id="' + item.id + '" ' + (coins < price ? 'disabled' : '') + '>かう</button>' +
+        '</div>';
+      list.appendChild(row);
+      return;
+    }
+    const equipped = !!equippedItems[item.id];
+    const locked = !isItemUnlocked(item);
+    const row = document.createElement('div');
+    row.className = 'shopItem' + (item.rarity === 'rare' ? ' rare' : (item.rarity === 'ultra' ? ' ultra' : (item.rarity === 'legendary' ? ' legendary' : (item.rarity === 'divine' ? ' divine' : (item.rarity === 'godking' ? ' godking' : (item.rarity === 'phantom' ? ' phantom' : '')))))) + (locked ? ' locked-item' : '');
+    if (locked) {
+      const reqLabel = item.specialUnlock === 'EXTREME' ? '超むずかしい' : RARITY_UNLOCK_REQUIREMENT[item.rarity].label;
+      row.innerHTML =
+        '<div class="shopItemIcon">🔒</div>' +
+        '<div class="shopItemInfo">' +
+          '<div class="shopItemName">？？？？？（🪙' + item.cost + '）</div>' +
+          '<div class="shopItemDesc">「' + reqLabel + '」をクリアするとかいほうされるよ</div>' +
+        '</div>';
+      list.appendChild(row);
+      return;
+    }
+    row.innerHTML =
+      '<div class="shopItemIcon">' + item.icon + '</div>' +
+      '<div class="shopItemInfo">' +
+        '<div class="shopItemName">' + phantomRevealText(item.name) + (item.kujiOnly ? '' : priceText) + '</div>' +
+        '<div class="shopItemDesc">' + phantomRevealText(item.desc) + '</div>' +
+        '<div class="shopItemOwned">🎒 ' + ((item.rarity === 'ultra' || item.rarity === 'legendary') ? 'のこりつかえる回数：' + owned + '回' : 'もちもの：' + owned + 'こ') + (equipped ? '　✅そうびちゅう（つぎの戦闘でつかうよ）' : '') + '</div>' +
+      '</div>' +
+      '<div class="shopBtnCol">' +
+        (item.kujiOnly ? '<div class="kujiOnlyTag">🎫くじ限定</div>' : '<button class="shopBuyBtn" data-id="' + item.id + '" ' + (coins < price ? 'disabled' : '') + '>かう</button>') +
+        (owned > 0 ? '<button class="shopEquipBtn' + (equipped ? ' equipped' : '') + '" data-equip-id="' + item.id + '">' + (equipped ? 'はずす' : 'そうび') + '</button>' : '') +
+      '</div>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.shopBuyBtn').forEach(btn => {
+    const id = btn.dataset.id;
+    btn.addEventListener('click', () => buyItem(id));
+    // ▼ 追加：5秒間おしつづけたら、はなすまで連続でかいつづけられるようにする
+    attachLongPress(btn, () => buyItem(id), () => {
+      const item = SHOP_ITEMS.find(it => it.id === id);
+      return item && isItemUnlocked(item) && !item.kujiOnly && coins >= getDiscountedCost(item.cost);
+    }, 5000, 400, 60, 40);
+  });
+  list.querySelectorAll('.shopEquipBtn').forEach(btn => {
+    btn.addEventListener('click', () => toggleEquip(btn.dataset.equipId));
+  });
+}
+function buyItem(id) {
+  const item = SHOP_ITEMS.find(it => it.id === id);
+  if (!item) return;
+  if (item.kujiOnly) return; // ← 追加：くじびき限定アイテムは、ショップでは買えない
+  if (!isItemUnlocked(item)) return; // ← 追加：かいほうされてないアイテムは買えない
+  const price = getDiscountedCost(item.cost); // ← 追加：げつまつ・おおみそかセールのわりびきをてきよう
+  if (coins < price) {
+    popup('🪙コインがたりないよ！', 100, 200);
+    return;
+  }
+  coins -= price;
+  addAchievePurchase(); // ← 追加：🎯こうにゅう回数のきろく
+  addAchieveCoinsSpent(price); // ← 追加：🎯つかったコインの合計のきろく
+  if (item.isKujiTicket) {
+    // ▼ 変更：くじびきチケットは、せんとう用アイテムとちがって、専用のかずにたまる
+    if (item.divineBoost) {
+      divineLuckTickets++;
+      saveDivineLuckTickets();
+    } else {
+      kujiTickets++;
+      saveKujiTickets();
+    }
+    saveCoins();
+    updateCoinUI();
+    renderShop();
+    return;
+  }
+  // ▼ 変更：🌟げきレア・💠超激レアは、1こ買うと5かいぶんつかえる
+  const addAmount = (item.rarity === 'ultra' || item.rarity === 'legendary') ? 5 : 1;
+  pendingItems[id] = (pendingItems[id] || 0) + addAmount;
+  saveCoins();
+  savePendingItems();
+  updateCoinUI();
+  renderShop();
+}
+loadCoins();
+loadPendingItems();
+loadEquippedItems();
+updateCoinUI();
+// ▲▲▲ ここまで ▲▲▲
+
+// ▼ 追加：買ったアイテムを、このプレイにてきようする(1こずつつかって、へらす)
+function applyPendingItems() {
+  let used = [];
+  if (equippedItems.heal && pendingItems.heal > 0) {
+    baseMaxHP += 30; maxHP += 30; playerHP = maxHP;
+    pendingItems.heal--; delete equippedItems.heal;
+    used.push('💚かいふくポーション');
+  }
+  if (equippedItems.time && pendingItems.time > 0) {
+    itemTimeBonus = 1.15;
+    pendingItems.time--; delete equippedItems.time;
+    used.push('⏱️じかんのすな');
+  }
+  if (equippedItems.levelboost && pendingItems.levelboost > 0) {
+    setLevel(3);
+    playerHP = maxHP;
+    pendingItems.levelboost--; delete equippedItems.levelboost;
+    used.push('⭐けいけんちのしょ');
+  }
+  if (equippedItems.shield && pendingItems.shield > 0) {
+    itemDmgReduction = 0.8;
+    pendingItems.shield--; delete equippedItems.shield;
+    used.push('🛡️まもりのお守り');
+  }
+  if (equippedItems.luck && pendingItems.luck > 0) {
+    itemLuckMult = 2;
+    pendingItems.luck--; delete equippedItems.luck;
+    used.push('🍀らっきーのおまもり');
+  }
+  if (equippedItems.scoreboost && pendingItems.scoreboost > 0) {
+    itemScoreMult = 1.25;
+    pendingItems.scoreboost--; delete equippedItems.scoreboost;
+    used.push('💯スコアブースト');
+  }
+  if (equippedItems.coinboost && pendingItems.coinboost > 0) {
+    itemCoinBonus = true;
+    pendingItems.coinboost--; delete equippedItems.coinboost;
+    used.push('🪙コインブースト');
+  }
+  if (equippedItems.copperpile && pendingItems.copperpile > 0) {
+    itemBonusCoinFlat += 20;
+    pendingItems.copperpile--; delete equippedItems.copperpile;
+    used.push('🟤どうかのやま');
+  }
+  if (equippedItems.missguard && pendingItems.missguard > 0) {
+    itemMissGuardActive = true;
+    pendingItems.missguard--; delete equippedItems.missguard;
+    used.push('🎯ミスガード');
+  }
+  if (equippedItems.headstart && pendingItems.headstart > 0) {
+    score += 100;
+    pendingItems.headstart--; delete equippedItems.headstart;
+    used.push('⚡げんきスタート');
+  }
+  if (equippedItems.revive && pendingItems.revive > 0) {
+    itemReviveCharges += 1;
+    pendingItems.revive--; delete equippedItems.revive;
+    used.push('🔄リトライけん');
+  }
+  if (equippedItems.heal2 && pendingItems.heal2 > 0) {
+    baseMaxHP += 60; maxHP += 60; playerHP = maxHP;
+    pendingItems.heal2--; delete equippedItems.heal2;
+    used.push('💎だいちのかご');
+  }
+  if (equippedItems.regen && pendingItems.regen > 0) {
+    itemRegenActive = true;
+    pendingItems.regen--; delete equippedItems.regen;
+    used.push('🍯みつのつぼ');
+  }
+  if (equippedItems.bonuscoin && pendingItems.bonuscoin > 0) {
+    itemBonusCoinFlat = 50;
+    pendingItems.bonuscoin--; delete equippedItems.bonuscoin;
+    used.push('🎁おまけコイン');
+  }
+  if (equippedItems.firstweak && pendingItems.firstweak > 0) {
+    itemFirstWeakPending = true;
+    pendingItems.firstweak--; delete equippedItems.firstweak;
+    used.push('🏹せんこうのちから');
+  }
+  if (equippedItems.missflat && pendingItems.missflat > 0) {
+    itemMissFlatActive = true;
+    pendingItems.missflat--; delete equippedItems.missflat;
+    used.push('🕶️しんぼうのおふだ');
+  }
+  if (equippedItems.combofast && pendingItems.combofast > 0) {
+    itemComboHealInterval = 2;
+    pendingItems.combofast--; delete equippedItems.combofast;
+    used.push('🔥れんぞくブースト');
+  }
+  if (equippedItems.rainbow && pendingItems.rainbow > 0) {
+    itemRainbowActive = true;
+    pendingItems.rainbow--; delete equippedItems.rainbow;
+    used.push('🌈にじのかけら');
+  }
+  if (equippedItems.comboguard && pendingItems.comboguard > 0) {
+    itemComboGuardActive = true;
+    pendingItems.comboguard--; delete equippedItems.comboguard;
+    used.push('⏳セカンドチャンス');
+  }
+  if (equippedItems.restticket && pendingItems.restticket > 0) {
+    itemRestTicketActive = true;
+    pendingItems.restticket--; delete equippedItems.restticket;
+    used.push('🛏️やすみのふだ');
+  }
+  if (equippedItems.golden && pendingItems.golden > 0) {
+    itemScoreMult *= 1.15;
+    itemCoinBonus = true;
+    itemDmgReduction *= 0.9;
+    pendingItems.golden--; delete equippedItems.golden;
+    used.push('👑おうごんのかんむり');
+  }
+  if (equippedItems.expboost && pendingItems.expboost > 0) {
+    itemExpMult = 1.3;
+    pendingItems.expboost--; delete equippedItems.expboost;
+    used.push('🎯めいちゅうのふだ');
+  }
+  if (equippedItems.nightbonus && pendingItems.nightbonus > 0) {
+    itemBonusScoreFlat += 20;
+    pendingItems.nightbonus--; delete equippedItems.nightbonus;
+    used.push('🌙つきよのおまもり');
+  }
+  if (equippedItems.shortword && pendingItems.shortword > 0) {
+    itemShortWordBias = true;
+    pendingItems.shortword--; delete equippedItems.shortword;
+    used.push('🍃かるさのおふだ');
+  }
+  if (equippedItems.firststrike && pendingItems.firststrike > 0) {
+    itemFirstStrikePending = true;
+    pendingItems.firststrike--; delete equippedItems.firststrike;
+    used.push('🥇はじめのいちげき');
+  }
+  if (equippedItems.comboamp && pendingItems.comboamp > 0) {
+    itemComboHealAmount = 24;
+    pendingItems.comboamp--; delete equippedItems.comboamp;
+    used.push('💪ちからのゆびわ');
+  }
+  if (equippedItems.windboost && pendingItems.windboost > 0) {
+    itemTimeBonus *= 1.1;
+    pendingItems.windboost--; delete equippedItems.windboost;
+    used.push('🌬️かぜのごか');
+  }
+  if (equippedItems.legendsword && pendingItems.legendsword > 0) {
+    itemDmgReduction *= 0.7;
+    itemMissFlatActive = true;
+    pendingItems.legendsword--; delete equippedItems.legendsword;
+    used.push('💫でんせつのつるぎ');
+  }
+  if (equippedItems.spacetimegem && pendingItems.spacetimegem > 0) {
+    itemTimeBonus *= 1.3;
+    pendingItems.spacetimegem--; delete equippedItems.spacetimegem;
+    used.push('🌌じくうのほうせき');
+  }
+  if (equippedItems.phantompearl && pendingItems.phantompearl > 0) {
+    itemPhantomPearlActive = true;
+    pendingItems.phantompearl--; delete equippedItems.phantompearl;
+    used.push('🦄げんそうのしんじゅ');
+  }
+  if (equippedItems.divinemark && pendingItems.divinemark > 0) {
+    itemScoreMult *= 1.6;
+    itemCoinBonus = true;
+    itemReviveCharges += 2;
+    pendingItems.divinemark--; delete equippedItems.divinemark;
+    used.push('🔱かみのちからのしるし');
+  }
+  if (equippedItems.silvercoinjar && pendingItems.silvercoinjar > 0) {
+    itemCoinMult *= 1.2;
+    pendingItems.silvercoinjar--; delete equippedItems.silvercoinjar;
+    used.push('🥈ぎんかのつぼ');
+  }
+  if (equippedItems.miraclerobe && pendingItems.miraclerobe > 0) {
+    itemDmgReduction *= 0.5;
+    itemReviveCharges += 3;
+    pendingItems.miraclerobe--; delete equippedItems.miraclerobe;
+    used.push('🌟きせきのはごろも');
+  }
+  if (equippedItems.infinitehourglass && pendingItems.infinitehourglass > 0) {
+    itemTimeBonus *= 1.5;
+    pendingItems.infinitehourglass--; delete equippedItems.infinitehourglass;
+    used.push('♾️むげんのすなどけい');
+  }
+  if (equippedItems.goldenchest && pendingItems.goldenchest > 0) {
+    itemBonusCoinFlat += 300;
+    pendingItems.goldenchest--; delete equippedItems.goldenchest;
+    used.push('💰おうごんのたからばこ');
+  }
+  if (equippedItems.goldcoinshower && pendingItems.goldcoinshower > 0) {
+    itemBonusCoinFlat += 150;
+    pendingItems.goldcoinshower--; delete equippedItems.goldcoinshower;
+    used.push('🌧️きんかのシャワー');
+  }
+  if (equippedItems.truekingcrown && pendingItems.truekingcrown > 0) {
+    itemScoreMult *= 2;
+    itemCoinBonus = true;
+    itemDmgReduction *= 0.6;
+    itemReviveCharges += 3;
+    itemLuckMult *= 2;
+    pendingItems.truekingcrown--; delete equippedItems.truekingcrown;
+    used.push('👑しんげきのおうかん');
+  }
+  if (equippedItems.dragonpower && pendingItems.dragonpower > 0) {
+    itemScoreMult *= 3;
+    itemDmgReduction *= 0.4;
+    pendingItems.dragonpower--; delete equippedItems.dragonpower;
+    used.push('🐉げんしのりゅうのちから');
+  }
+  if (equippedItems.timestop && pendingItems.timestop > 0) {
+    itemTimeBonus *= 2;
+    pendingItems.timestop--; delete equippedItems.timestop;
+    used.push('⏰じかんていしのほう');
+  }
+  if (equippedItems.godblessing && pendingItems.godblessing > 0) {
+    itemScoreMult *= 2.5;
+    itemCoinBonus = true;
+    itemDmgReduction *= 0.3;
+    itemReviveCharges += 5;
+    itemLuckMult *= 3;
+    itemTimeBonus *= 1.3;
+    pendingItems.godblessing--; delete equippedItems.godblessing;
+    used.push('👼かみのめぐみ');
+  }
+  if (equippedItems.dragonscale && pendingItems.dragonscale > 0) {
+    itemCoinMult *= 1.5;
+    pendingItems.dragonscale--; delete equippedItems.dragonscale;
+    used.push('🐉おうごんのりゅうのうろこ');
+  }
+  if (equippedItems.hitreduceminor && pendingItems.hitreduceminor > 0) {
+    itemHitReductionMinorActive = true;
+    pendingItems.hitreduceminor--; delete equippedItems.hitreduceminor;
+    used.push('🗡️れんげきのおうぎ');
+  }
+  if (equippedItems.creatorpower && pendingItems.creatorpower > 0) {
+    itemScoreMult *= 5;
+    itemCoinBonus = true;
+    itemBonusCoinFlat += 500;
+    itemDmgReduction *= 0.05;
+    itemReviveCharges += 10;
+    itemLuckMult *= 5;
+    itemTimeBonus *= 2.5;
+    // ▼ 変更：神レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('🕊️そうぞうしゃのちから');
+  }
+  if (equippedItems.onehitkill && pendingItems.onehitkill > 0) {
+    itemHitReductionActive = true;
+    // ▼ 変更：神レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('⚔️いちげきひっさつのおうぎ');
+  }
+  if (equippedItems.halfwave && pendingItems.halfwave > 0) {
+    itemHalveWaveActive = true;
+    // ▼ 神レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('🌀じくうのねじれ');
+  }
+  if (equippedItems.infinitegolddrop && pendingItems.infinitegolddrop > 0) {
+    itemCoinMult *= 2;
+    itemBonusCoinFlat += 800;
+    // ▼ 神レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('💧むげんのこがねのしずく');
+  }
+  if (equippedItems.powertransfer && pendingItems.powertransfer > 0) {
+    itemDmgReduction *= 0.5;
+    itemScoreMult *= 2;
+    // ▼ 神レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('🔄ちからのてんい');
+  }
+  if (equippedItems.godkingpower && pendingItems.godkingpower > 0) {
+    itemScoreMult *= 8;
+    itemCoinBonus = true;
+    itemBonusCoinFlat += 1000;
+    itemDmgReduction *= 0.02;
+    itemReviveCharges += 20;
+    itemLuckMult *= 8;
+    itemTimeBonus *= 3;
+    itemHitReductionMaxActive = true; // ← たおす回数もぜんぶ1回に
+    // ▼ 変更：神王レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('⚡しんおうのちから');
+  }
+  if (equippedItems.ultimatepower && pendingItems.ultimatepower > 0) {
+    itemScoreMult *= 15;
+    itemCoinBonus = true;
+    itemBonusCoinFlat += 3000;
+    itemDmgReduction *= 0.01;
+    itemReviveCharges += 50;
+    itemLuckMult *= 15;
+    itemTimeBonus *= 4;
+    itemHitReductionMaxActive = true; // ← たおす回数もぜんぶ1回に
+    // ▼ 神王レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('🌠きわみのちから');
+  }
+  if (equippedItems.truedragonblessing && pendingItems.truedragonblessing > 0) {
+    itemScoreMult *= 20;
+    itemCoinBonus = true;
+    itemBonusCoinFlat += 5000;
+    itemLuckMult *= 20;
+    // ▼ 神王レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('🐲しんりゅうのめぐみ');
+  }
+  if (equippedItems.phantompower && pendingItems.phantompower > 0) {
+    itemScoreMult *= 30;
+    itemCoinBonus = true;
+    itemCoinMult *= 3;
+    itemBonusCoinFlat += 8000;
+    itemDmgReduction *= 0.005;
+    itemReviveCharges += 99;
+    itemLuckMult *= 25;
+    itemTimeBonus *= 5;
+    itemHitReductionMaxActive = true; // ← たおす回数もぜんぶ1回に
+    // ▼ ？？？？レアは、なんかいつかってもへらない・そうびもきえない
+    used.push('🌫️まぼろしのちから');
+  }
+  savePendingItems();
+  saveEquippedItems();
+  used.forEach((name, i) => {
+    setTimeout(() => popup('✨' + name + 'をつかった！', 90, 190 + i * 26), 300 + i * 200);
+  });
+}
+
+// ▼ 追加：「むずかしい」のロック・かいほうのしくみ
+const hardBtnEl = document.getElementById('hardBtn');
+function isHardUnlocked() {
+  try {
+    return localStorage.getItem('gal-battle-hard-unlocked') === 'yes';
+  } catch (e) { return false; }
+}
+function updateHardLockUI() {
+  const unlocked = isHardUnlocked();
+  hardBtnEl.classList.toggle('locked', !unlocked);
+  hardBtnEl.textContent = unlocked ? '🔥むずかしい' : '🔒むずかしい';
+  hardBtnEl.title = unlocked ? '' : 'ラスボスをたおすと かいほうされるよ！';
+}
+function unlockHard() {
+  try { localStorage.setItem('gal-battle-hard-unlocked', 'yes'); } catch (e) {}
+  updateHardLockUI();
+}
+updateHardLockUI();
+
+// ▼ 追加：「超むずかしい」のロック・かいほうのしくみ(むずかしいをクリアするとかいほう)
+const extremeBtnEl = document.getElementById('extremeBtn');
+function isExtremeUnlocked() {
+  try {
+    return localStorage.getItem('gal-battle-extreme-unlocked') === 'yes';
+  } catch (e) { return false; }
+}
+function updateExtremeLockUI() {
+  const unlocked = isExtremeUnlocked();
+  extremeBtnEl.classList.toggle('locked', !unlocked);
+  extremeBtnEl.textContent = unlocked ? '💀超むずかしい' : '🔒超むずかしい';
+  extremeBtnEl.title = unlocked ? '' : 'むずかしいをクリアすると かいほうされるよ！';
+}
+function unlockExtreme() {
+  try { localStorage.setItem('gal-battle-extreme-unlocked', 'yes'); } catch (e) {}
+  updateExtremeLockUI();
+}
+updateExtremeLockUI();
+// ▲▲▲ ここまで ▲▲▲
+
+// ▼ 追加：⚔️いちげきひっさつのおうぎのこうか(たおす回数をへらす)
+const HIT_REDUCTION_MAP = { 2: 1, 3: 1, 4: 2 };
+function reduceHits(n) {
+  return HIT_REDUCTION_MAP[n] || n; // マップにない回数(1など)は、そのまま
+}
+// ▼ 追加：🗡️れんげきのおうぎのこうか(たおす回数を1回だけへらす)
+const HIT_REDUCTION_MAP_MINOR = { 2: 1, 3: 2, 4: 3 };
+function reduceHitsMinor(n) {
+  return HIT_REDUCTION_MAP_MINOR[n] || n;
+}
+
+// ▼ 追加：？？？？レアは、げっとしたら本当の名前(まぼろしレア)がわかるようになる
+function phantomRevealText(text) {
+  if (!text) return text;
+  const revealed = (pendingItems['phantompower'] || 0) > 0;
+  return revealed ? text.replace(/？？？？レア/g, 'まぼろしレア') : text;
+}
+
+// ▼ 追加：ショップのレアリティかいほうのしくみ(むずかしさクリアでかいほう)
+function isRarityUnlocked(rarity) {
+  const key = { ultra: 'gal-battle-rarity-ultra', legendary: 'gal-battle-rarity-legendary', divine: 'gal-battle-rarity-divine', godking: 'gal-battle-rarity-godking', phantom: 'gal-battle-rarity-phantom' }[rarity];
+  if (!key) return true; // ふつう・レアはさいしょからかいほうずみ
+  try { return localStorage.getItem(key) === 'yes'; } catch (e) { return false; }
+}
+function unlockRarity(rarity) {
+  const key = { ultra: 'gal-battle-rarity-ultra', legendary: 'gal-battle-rarity-legendary', divine: 'gal-battle-rarity-divine', godking: 'gal-battle-rarity-godking', phantom: 'gal-battle-rarity-phantom' }[rarity];
+  if (!key) return;
+  try { localStorage.setItem(key, 'yes'); } catch (e) {}
+}
+const RARITY_UNLOCK_REQUIREMENT = {
+  ultra: { diff: 'VERY_EASY', label: '超かんたん' },
+  legendary: { diff: 'EASY', label: 'かんたん' },
+  divine: { diff: 'NORMAL', label: 'ふつう' },
+  godking: { diff: 'HARD', label: 'むずかしい' },
+  phantom: { diff: 'EXTREME', label: '超むずかしい' }
+};
+// ▼ 追加：アイテムごとに、レアリティのかいほうとはべつの「とくべつなかいほうじょうけん」をつけられるしくみ
+function isExtremeClearedUnlocked() {
+  try { return localStorage.getItem('gal-battle-extreme-cleared') === 'yes'; } catch (e) { return false; }
+}
+function unlockExtremeCleared() {
+  try { localStorage.setItem('gal-battle-extreme-cleared', 'yes'); } catch (e) {}
+}
+function isItemUnlocked(item) {
+  if (!isRarityUnlocked(item.rarity)) return false;
+  if (item.specialUnlock === 'EXTREME') return isExtremeClearedUnlocked();
+  return true;
+}
+
+function popup(text, x, y) {
+  const p = document.createElement('div');
+  p.className = 'popup';
+  p.textContent = text;
+  p.style.left = x + 'px';
+  p.style.top = y + 'px';
+  arena.appendChild(p);
+  setTimeout(() => p.remove(), 800);
+}
+
+// ▼ 追加：単語をうちおわった「トドメ」のときの「チュドーン！」サウンド
+function playFinisherSound() {
+  if (!audioCtx || musicMuted) return;
+  const t = audioCtx.currentTime;
+  // 「チュ」→高いところから、するどく下がる音
+  const swoop = audioCtx.createOscillator();
+  swoop.type = 'sawtooth';
+  swoop.frequency.setValueAtTime(1800, t);
+  swoop.frequency.exponentialRampToValueAtTime(300, t + 0.09);
+  const gs = audioCtx.createGain();
+  gs.gain.setValueAtTime(0.0001, t);
+  gs.gain.linearRampToValueAtTime(0.55, t + 0.01);
+  gs.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+  swoop.connect(gs);
+  gs.connect(masterGain);
+  swoop.start(t);
+  swoop.stop(t + 0.12);
+  // 「ドーン」→ひくい爆発おと
+  const boom = audioCtx.createOscillator();
+  boom.type = 'sine';
+  boom.frequency.setValueAtTime(190, t + 0.08);
+  boom.frequency.exponentialRampToValueAtTime(38, t + 0.42);
+  const gb = audioCtx.createGain();
+  gb.gain.setValueAtTime(0.0001, t + 0.08);
+  gb.gain.linearRampToValueAtTime(1.0, t + 0.11);
+  gb.gain.exponentialRampToValueAtTime(0.0001, t + 0.48);
+  boom.connect(gb);
+  gb.connect(masterGain);
+  boom.start(t + 0.08);
+  boom.stop(t + 0.5);
+  // キラキラした煌めきの和音をかさねる
+  [880, 1320, 1760].forEach((freq, i) => {
+    const o = audioCtx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.value = freq;
+    const g = audioCtx.createGain();
+    const t2 = t + 0.12 + i * 0.02;
+    g.gain.setValueAtTime(0.0001, t2);
+    g.gain.linearRampToValueAtTime(0.4, t2 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.32);
+    o.connect(g);
+    g.connect(masterGain);
+    o.start(t2);
+    o.stop(t2 + 0.34);
+  });
+}
+
+// ▼ 追加：ノーミスでたおしつづけたときの「〇コンボ！」フラッシュ
+function comboFlashFx(n) {
+  if (n < 2) return; // 1れんぞくめは、まだ「コンボ」じゃないので出さない
+  const el = document.createElement('div');
+  el.className = 'comboFlash';
+  el.textContent = n + 'コンボ！';
+  arena.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+// ▼ 追加：ノーミスで3れんぞくたおすたびに、HPをすこし回復する
+function comboHealFx(amount) {
+  // ▼ 変更：文字なしで、HPバーのあたりからエメラルドグリーンのキラキラが舞う
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div');
+    p.className = 'healSparkle';
+    p.style.left = (10 + Math.random() * 80) + '%';
+    p.style.bottom = (6 + Math.random() * 10) + '%';
+    const dx = (Math.random() - 0.5) * 70;
+    const dy = -(40 + Math.random() * 50);
+    p.style.setProperty('--sx', dx + 'px');
+    p.style.setProperty('--sy', dy + 'px');
+    arena.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+// ▼ 追加：ミスしたときの、赤フラッシュ＋❌マークのえんしゅつ
+function missEffectFx() {
+  const flash = document.createElement('div');
+  flash.className = 'missFlash';
+  arena.appendChild(flash);
+  setTimeout(() => flash.remove(), 300);
+
+  const mark = document.createElement('div');
+  mark.className = 'missMark';
+  mark.textContent = '✗';
+  arena.appendChild(mark);
+  setTimeout(() => mark.remove(), 380);
+}
+
+// ▼ 追加：たおしたときの、はでな「ドーン！」えんしゅつ
+const PARTICLE_COLORS = ['#ffd23f', '#ff2e93', '#00e5ff', '#7fff8a', '#ff8a5c'];
+function defeatBurstFx() {
+  // 画面フラッシュ
+  const flash = document.createElement('div');
+  flash.className = 'screenFlash';
+  arena.appendChild(flash);
+  setTimeout(() => flash.remove(), 350);
+
+  // まんなかの爆発
+  const burst = document.createElement('div');
+  burst.className = 'burst';
+  arena.appendChild(burst);
+  setTimeout(() => burst.remove(), 500);
+
+  // キラキラ飛び散るパーティクル
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (Math.PI * 2 / 14) * i + Math.random() * 0.4;
+    const dist = 90 + Math.random() * 70;
+    p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
+    p.style.setProperty('--pr', (Math.random() * 360) + 'deg');
+    p.style.background = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
+    arena.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+
+  // 画面もちょっとだけゆらす
+  arena.classList.remove('shake');
+  void arena.offsetWidth;
+  arena.classList.add('shake');
+}
+
+function updateHUD() {
+  scoreVal.textContent = score;
+  comboVal.textContent = combo;
+  waveVal.textContent = wave;
+  levelVal.textContent = level;
+  hpMaxSpan.textContent = '/' + maxHP;
+  playerFill.style.width = Math.max(playerHP, 0) / maxHP * 100 + '%';
+}
+
+// ▼ 追加：レベルをせっていして、さいだいHPをけいさんしなおす
+function setLevel(newLevel) {
+  level = newLevel;
+  maxHP = baseMaxHP + (level - 1) * 20;
+}
+
+// ▼ 追加：10ウェーブたおすごとに レベルアップ！するよ
+// ▼ 追加：レベルアップしたときの「ごほうび」を、ランダムでえらぶしくみ
+const LEVELUP_REWARDS = [
+  { label: 'HPぜんかいふく！💚', apply: () => { playerHP = maxHP; } },
+  { label: 'スコアボーナス+150！✨', apply: () => { score += 150; } },
+  { label: 'さいだいHPがおまけで+10！💪', apply: () => { maxHP += 10; playerHP = Math.min(maxHP, playerHP + 30); } },
+  { label: 'つぎのてきがよわくなる！🍀', apply: () => { bonusNextWeak = true; } },
+  { label: 'つぎのてきのじかんがのびる！⏱️', apply: () => { bonusNextTime = true; } }
+];
+function levelUp() {
+  setLevel(level + 1);
+  playerHP = Math.min(maxHP, playerHP + 30); // きほんの回復
+  const reward = LEVELUP_REWARDS[Math.floor(Math.random() * LEVELUP_REWARDS.length)]; // ← ランダムでごほうびをえらぶ
+  reward.apply();
+  updateHUD();
+  popup('⭐LVアップ！Lv.' + level + ' 🎁' + reward.label, 130, 260);
+}
+
+// ▼ 追加：たたかいのあとに もらえる EXP(けいけんち) のしくみ
+let exp = 0, expToNext = 50;
+function updateExpUI() {
+  expTextEl.textContent = exp + '/' + expToNext;
+  expFillEl.style.width = Math.min(100, exp / expToNext * 100) + '%';
+}
+function gainExp(amount) {
+  exp += amount;
+  while (exp >= expToNext) {
+    exp -= expToNext;
+    levelUp(); // ← EXPがたまったら、れべるあっぷ！
+    expToNext = Math.round(expToNext * 1.18) + 5; // つぎに必要なEXPも、すこしずつふえる
+  }
+  updateExpUI();
+}
+
+function comboMessage(c) {
+  if (c >= 15) return 'マジ卍！！！';
+  if (c >= 10) return '神ってる〜✨';
+  if (c >= 5) return 'それな〜！';
+  return 'ナイス💖';
+}
+
+function renderRomaji() {
+  // 今しぼりこまれている書き方の中から、1つ選んで表示するよ
+  const showWord = currentVariants[0] || '';
+  const done = showWord.slice(0, typedIndex);
+  const next = showWord.slice(typedIndex, typedIndex + 1); // ← 追加：つぎに打つ1文字
+  const rest = showWord.slice(typedIndex + 1);
+  wordBubble.querySelector('.romaji').innerHTML =
+    '<span class="done">' + done + '</span><span class="next">' + next + '</span><span class="rest">' + rest + '</span>';
+}
+
+// ▼ 追加：むずかしさに合わせて「みじかい・ふつう・ながい」単語のわりあいをかえるしくみ
+// short=6文字いか、medium=7〜10文字、long=11文字いじょう
+const LENGTH_TIER_WEIGHTS = {
+  VERY_EASY: { short: 0.70, medium: 0.25, long: 0.05 },
+  EASY:      { short: 0.45, medium: 0.40, long: 0.15 },
+  NORMAL:    { short: 0.25, medium: 0.45, long: 0.30 },
+  HARD:      { short: 0.10, medium: 0.35, long: 0.55 },
+  EXTREME:   { short: 0.03, medium: 0.22, long: 0.75 }
+};
+function wordLengthTier(romaji) {
+  if (romaji.length <= 6) return 'short';
+  if (romaji.length <= 10) return 'medium';
+  return 'long';
+}
+function pickWordByDifficulty(candidates) {
+  const baseWeights = LENGTH_TIER_WEIGHTS[difficulty] || LENGTH_TIER_WEIGHTS.NORMAL;
+  // ▼ 変更：初盤はとことん短く、後半はとことん長くなる、強めのカーブにする
+  const waveProgress = Math.min(1, Math.max(0, (wave - 1) / (FINAL_WAVE - 1))); // wave1で0、さいごのウェーブで1
+  const curveShort = 0.85 * (1 - waveProgress) + 0.02 * waveProgress; // 0.85 → 0.02
+  const curveLong = 0.02 * (1 - waveProgress) + 0.78 * waveProgress;  // 0.02 → 0.78
+  // むずかしさぶんの「かたより」を、上のカーブにブレンドする(むずかしいほど long よりに)
+  const diffShift = baseWeights.long - 0.30; // NORMALをきじゅんにした差分
+  let long = Math.min(0.95, Math.max(0.01, curveLong + diffShift * 0.4));
+  let short = Math.min(0.95, Math.max(0.01, curveShort - diffShift * 0.4));
+  if (itemShortWordBias) {
+    // ▼ 追加：🍃かるさのおふだのこうか(みじかい単語がすこし出やすくなる)
+    short = Math.min(0.95, short + 0.15);
+    long = Math.max(0.01, long - 0.1);
+  }
+  let medium = Math.max(0.02, 1 - short - long);
+  const r = Math.random();
+  let tier;
+  if (r < short) tier = 'short';
+  else if (r < short + medium) tier = 'medium';
+  else tier = 'long';
+  let tierCandidates = candidates.filter(w => wordLengthTier(w.romaji) === tier);
+  if (tierCandidates.length === 0) tierCandidates = candidates; // ← そのながさの単語がなければ、ぜんぶから選ぶ
+  return tierCandidates[Math.floor(Math.random() * tierCandidates.length)];
+}
+
+// ▼ 追加：むずかしさに合わせて「モンスターのつよさランク(tier)」もかたよらせる
+const ENEMY_TIER_WEIGHTS = {
+  VERY_EASY: { 1: 0.55, 2: 0.35, 3: 0.08, 4: 0.02 },
+  EASY:      { 1: 0.35, 2: 0.40, 3: 0.18, 4: 0.07 },
+  NORMAL:    { 1: 0.20, 2: 0.35, 3: 0.30, 4: 0.15 },
+  HARD:      { 1: 0.08, 2: 0.22, 3: 0.40, 4: 0.30 },
+  EXTREME:   { 1: 0.03, 2: 0.12, 3: 0.35, 4: 0.50 }
+};
+function pickEnemyByDifficulty() {
+  const w = ENEMY_TIER_WEIGHTS[difficulty] || ENEMY_TIER_WEIGHTS.NORMAL;
+  const r = Math.random();
+  let tier;
+  if (r < w[1]) tier = 1;
+  else if (r < w[1] + w[2]) tier = 2;
+  else if (r < w[1] + w[2] + w[3]) tier = 3;
+  else tier = 4;
+  let pool = ENEMY_LIST.filter(e => e.tier === tier);
+  if (pool.length === 0) pool = ENEMY_LIST;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ▼ 追加：つぎに出る単語を先読みして、右がわにプレビューひょうじする
+const nextPreviewEl = document.getElementById('nextPreview');
+const nextRomajiEl = document.getElementById('nextRomaji');
+function poolForWave(w) {
+  if (w > FINAL_WAVE) return null;
+  const f = w === FINAL_WAVE;
+  const lb = !f && w % 50 === 0;
+  const b = !f && !lb && w % 5 === 0;
+  return f ? FINAL_WORDS : (lb ? LASTBOSS_WORDS : (b ? BOSS_WORDS : NORMAL_WORDS));
+}
+// ▼ 追加：「たおした後、つぎに出るのはどのプールか」をもとめる
+function computeNextPool() {
+  if (isFinal) {
+    return (finalHitsLeft > 1) ? FINAL_WORDS : null; // 1のこりならこれでゲームおわり
+  } else if (isBoss && bossHitsRequired > 1 && bossHitsLeft > 1) {
+    return BOSS_WORDS;
+  } else {
+    return poolForWave(wave + 1);
+  }
+}
+function updateNextPreview() {
+  const nextPool = computeNextPool();
+  if (!nextPool) {
+    pendingNextEntry = null;
+    nextPreviewEl.style.display = 'none';
+    return;
+  }
+  const noRepeatCount = Math.min(recentWords.length + 1, Math.floor(nextPool.length / 2));
+  let cands = nextPool.filter(w => !recentWords.slice(-noRepeatCount).includes(w.romaji));
+  if (cands.length === 0) cands = nextPool;
+  pendingNextEntry = pickWordByDifficulty(cands);
+  nextRomajiEl.textContent = pendingNextEntry.romaji;
+  nextPreviewEl.style.display = 'block';
+}
+// ▼ 追加：ミスしたときに、プレビューも「やさしい単語」に更新しなおす(プレビューと実際がズレないように)
+function refreshPreviewAfterMiss() {
+  const nextPool = computeNextPool();
+  if (!nextPool) {
+    pendingNextEntry = null;
+    nextPreviewEl.style.display = 'none';
+    return;
+  }
+  const noRepeatCount = Math.min(recentWords.length + 1, Math.floor(nextPool.length / 2));
+  let cands = nextPool.filter(w => !recentWords.slice(-noRepeatCount).includes(w.romaji));
+  if (cands.length === 0) cands = nextPool;
+  let easier = cands.filter(w => w.romaji.length <= currentWordLen);
+  if (easier.length === 0) easier = cands;
+  pendingNextEntry = easier[Math.floor(Math.random() * easier.length)];
+  nextRomajiEl.textContent = pendingNextEntry.romaji;
+  nextPreviewEl.style.display = 'block';
+}
+
+function spawnEnemy() {
+  isFinal = wave === FINAL_WAVE;
+  isLastBoss = !isFinal && wave % 50 === 0;
+  isMidBoss = !isFinal && !isLastBoss && wave % 25 === 0; // ← 追加：25の倍数のウェーブで、「中ボス」
+  if (isMidBoss && wave !== midBossWaveTracker) {
+    // ▼ 追加：あたらしい中ボスが出たときだけ、たおす回数をリセット
+    midBossWaveTracker = wave;
+    midBossHitsLeft = bossHitsRequired;
+  }
+  isBoss2 = !isFinal && !isLastBoss && !isMidBoss && wave % 10 === 0; // ← 追加：10の倍数のウェーブで、あたらしい「ボス」
+  if (isBoss2 && wave !== boss2WaveTracker) {
+    // ▼ 追加：あたらしい「ボス」が出たときだけ、たおす回数をリセット
+    boss2WaveTracker = wave;
+    boss2HitsLeft = bossHitsRequired;
+  }
+  isBoss = !isFinal && !isLastBoss && !isMidBoss && !isBoss2 && wave % 5 === 0;
+  if (isBoss && wave !== bossWaveTracker) {
+    // ▼ 追加：あたらしいだいまおうドラゴンが出たときだけ、たおす回数をリセット
+    bossWaveTracker = wave;
+    bossHitsLeft = bossHitsRequired;
+  }
+  isSuperStrong = !isFinal && !isLastBoss && !isBoss && !isBoss2 && !isMidBoss && Math.random() < 4 / 444444; // ← 追加：444444ぶんの4で出る「だいばくはつキング」
+  isCoinMob = !isFinal && !isLastBoss && !isBoss && !isBoss2 && !isMidBoss && !isSuperStrong && Math.random() < 5 / 5555; // ← 追加：5555ぶんの5で出る「マネーバッグくん」
+  isMegaLucky = !isFinal && !isSuperStrong && !isCoinMob && ((itemPhantomPearlActive && wave === 5) || Math.random() < (67 / 77777) * itemLuckMult); // ← 追加：🍀らっきーのおまもり／🦄げんそうのしんじゅのこうか
+  if (itemPhantomPearlActive && wave === 5) { itemPhantomPearlActive = false; }
+  isUltraRare = !isFinal && !isSuperStrong && !isCoinMob && !isMegaLucky && Math.random() < (1 / 6767) * itemLuckMult;
+  isWeak = !isFinal && !isSuperStrong && !isCoinMob && (isMegaLucky || isUltraRare || bonusNextWeak || (itemFirstWeakPending && wave === 1) || Math.random() < (1 / 77) * itemLuckMult); // ← 変更：77ぶんの1、レアイベント、レベルアップのごほうび、🏹せんこうのちからのときも「よわよわ」になる
+  if (itemFirstWeakPending && wave === 1) { itemFirstWeakPending = false; popup('🏹せんこうのちから発動！', 100, 150); }
+  if (bonusNextWeak) { bonusNextWeak = false; popup('🎁ごほうびで よわいてき！', 140, 150); }
+  applyStage(wave, isMegaLucky || isUltraRare || itemRainbowActive); // ← 変更：レアイベント、または🌈にじのかけらのときは、むりやりげきレアステージにする
+  if (isSuperStrong) {
+    popup('💀⚰️444444ぶんの4！！しにがみおうとうじょう…！！にげられない…！！⚰️💀', 20, 120);
+  } else if (isCoinMob) {
+    // ▼ 追加：5555ぶんの5！マネーバッグくんとうじょう→たおさなくてもコインがもらえる
+    coins += 5000;
+    saveCoins();
+    updateCoinUI();
+    popup('💰🎉5555ぶんの5！！マネーバッグくんとうじょう！！🪙コイン+5000ゲット！！🎉💰', 20, 120);
+  } else if (isMegaLucky) {
+    setLevel(10);       // ← レベルが一気に10に！
+    playerHP = maxHP;   // ← たいりょくぜんかいふく！
+    updateHUD();
+    popup('💎👑77777ぶんの67！ちょうちょうげきレア！てきが67ぶんの1のよわさ＋HPぜんかいふく＋Lv.10に！💎👑', 40, 130);
+  } else if (isUltraRare) {
+    popup('😱🌟6767ぶんの1！ちょうげきレア！てきが10ぶんの1のよわさ！🌟😱', 90, 150);
+  }
+  const pool = isSuperStrong ? SUPER_STRONG_WORDS : (isCoinMob ? COIN_MOB_WORDS : (isFinal ? FINAL_WORDS : (isLastBoss ? LASTBOSS_WORDS : (isMidBoss ? MIDBOSS_WORDS : (isBoss2 ? BOSS2_WORDS : (isBoss ? BOSS_WORDS : NORMAL_WORDS))))));
+  // ▼ 追加：直前に出た単語をのぞいてからえらぶことで、おなじ単語がつづけて出にくくする
+  const noRepeatCount = Math.min(recentWords.length + 1, Math.floor(pool.length / 2));
+  let candidates = pool.filter(w => !recentWords.slice(-noRepeatCount).includes(w.romaji));
+  if (candidates.length === 0) candidates = pool; // ぜんぶ最近出てたら、しかたないので全部から選ぶ
+  let entry;
+  if (pendingNextEntry) {
+    // ▼ 変更：まえのターンで先読み(＆ミス時はやさしく更新)しておいた単語を、そのまま使う
+    entry = pendingNextEntry;
+    pendingNextEntry = null;
+  } else if (previousMissed) {
+    // ▼ フォールバック：先読みがなかったときだけ、その場でやさしい単語をえらぶ
+    let easierCandidates = candidates.filter(w => w.romaji.length <= previousWordLenSnapshot);
+    if (easierCandidates.length === 0) easierCandidates = candidates;
+    entry = easierCandidates[Math.floor(Math.random() * easierCandidates.length)];
+  } else {
+    entry = pickWordByDifficulty(candidates); // ← むずかしさとウェーブに合わせて長さのかたよりをつけてえらぶ
+  }
+  previousMissed = false;
+  recentWords.push(entry.romaji);
+  if (recentWords.length > 8) recentWords.shift(); // きろくしすぎないように、8こまでにする
+  currentVariants = makeVariants(entry.romaji);
+  currentKana = entry.kana;
+  currentWordLen = entry.romaji.length || 1; // ← 追加：うった分だけHPをへらすための、単語の長さ
+  typedIndex = 0;
+  missThisWave = 0;
+  const normalEnemy = pickEnemyByDifficulty(); // ← 変更：むずかしさに合わせてモンスターのつよさをえらぶ
+  const cfg = isSuperStrong ? SUPER_STRONG_CFG : (isCoinMob ? COIN_MOB_CFG : (isFinal ? FINAL_CFG : (isLastBoss ? LASTBOSS_CFG : (isMidBoss ? MIDBOSS_CFG : (isBoss2 ? BOSS2_CFG : (isBoss ? BOSS_CFG : normalEnemy.cfg))))));
+  enemySprite.innerHTML = buildMonster(cfg);
+  enemyName.textContent = isSuperStrong ? SUPER_STRONG_NAME : (isCoinMob ? COIN_MOB_NAME : ((isFinal ? FINAL_NAME : (isLastBoss ? LASTBOSS_NAME : (isMidBoss ? MIDBOSS_NAME : (isBoss2 ? BOSS2_NAME : (isBoss ? BOSS_NAME : normalEnemy.name))))) + (isMegaLucky ? '（67ぶんの1）💎' : (isUltraRare ? '（10ぶんの1）🌟' : (isWeak ? '（よわよわ）🍀' : '')))));
+  enemyName.classList.toggle('lastboss', isLastBoss || isFinal || isSuperStrong);
+  // ▼ 変更：うった分だけHPがへっていくように、HPの「くぎり(セグメント)」をきめる
+  enemyHpHits = isFinal ? finalHitsRequired : ((isBoss || isBoss2 || isMidBoss) && bossHitsRequired > 1 ? bossHitsRequired : 1);
+  enemyHpSegSize = 100 / enemyHpHits;
+  if (isFinal) {
+    enemyHpSegStart = (finalHitsLeft / finalHitsRequired) * 100;
+  } else if (isBoss && bossHitsRequired > 1) {
+    enemyHpSegStart = (bossHitsLeft / bossHitsRequired) * 100;
+  } else if (isBoss2 && bossHitsRequired > 1) {
+    enemyHpSegStart = (boss2HitsLeft / bossHitsRequired) * 100;
+  } else if (isMidBoss && bossHitsRequired > 1) {
+    enemyHpSegStart = (midBossHitsLeft / bossHitsRequired) * 100;
+  } else {
+    enemyHpSegStart = 100;
+  }
+  enemyFill.style.width = enemyHpSegStart + '%';
+  wordBubble.innerHTML = '<div class="kana">' + entry.kana + '</div><div class="romaji"></div>';
+  renderRomaji();
+  updateNextPreview(); // ← 追加：つぎに出る単語を先読みして、右がわにプレビューひょうじする
+  enemySprite.classList.remove('hit');
+  const sizePx = isFinal ? 195 : (isLastBoss ? 182 : ((isBoss || isBoss2 || isMidBoss) ? 160 : 122));
+  const weakScale = isMegaLucky ? 0.5 : (isUltraRare ? 0.6 : (isWeak ? 0.8 : 1));
+  enemySprite.style.width = Math.round(sizePx * weakScale) + 'px';
+  enemySprite.style.height = Math.round(sizePx * weakScale) + 'px';
+  enemySprite.style.opacity = isMegaLucky ? '0.5' : (isUltraRare ? '0.55' : (isWeak ? '0.7' : '1'));
+  if (isWeak && !isUltraRare && !isMegaLucky && wave > 1) popup('🍀77ぶんの1！よわいてき！', 150, 160);
+  const glowColor = isFinal ? 'rgba(255,0,0,1)' : (isLastBoss ? 'rgba(220,0,70,0.85)' : ((isBoss || isBoss2 || isMidBoss) ? 'rgba(255,20,80,0.7)' : 'rgba(255,160,120,0.4)'));
+  enemySprite.style.setProperty('--glowColor', glowColor);
+  arena.classList.toggle('boss-mode', isBoss || isLastBoss || isFinal); // ← ボス戦のときだけ いなずまON
+  startBgm(isLastBoss ? 'boss' : 'normal'); // ← 追加：らすぼすのときだけ、ちがうBGMにする
+  if (isLastBoss || isFinal) {
+    // ▼ 変更：がめんゆれは らすぼす・さいごのてき のときだけに
+    arena.classList.remove('shake');
+    void arena.offsetWidth; // アニメーションをリセットするためのおまじない
+    arena.classList.add('shake');
+  }
+
+  timeLimit = isFinal ? 5000 : (isLastBoss ? 10000 : Math.max(1600, ((isBoss || isBoss2 || isMidBoss) ? 5200 : 3600) - wave * 60));
+  timeLimit = Math.round(timeLimit * DIFF_SETTINGS[difficulty].timeMult); // ← むずかしさぶん調整
+  timeLimit = Math.round(timeLimit * itemTimeBonus); // ← 追加：⏱️じかんのすなのこうか
+  if (isSuperStrong) timeLimit = Math.round(timeLimit * 0.5); // ← 追加：だいばくはつキングは、じかんがきびしい
+  else if (isCoinMob) timeLimit = Math.round(timeLimit * 1.25); // ← 追加：マネーバッグくんは、ふつうのてきよりすこしよわい(じかんによゆう)
+  if (itemRestTicketActive && wave === 1) {
+    // ▼ 追加：🛏️やすみのふだのこうか(さいしょのてきだけじかん3ばい)
+    timeLimit = Math.round(timeLimit * 3);
+    itemRestTicketActive = false;
+    popup('🛏️やすみのふだ発動！じかんに よゆう！', 100, 150);
+  }
+  else if (isMegaLucky) timeLimit = Math.round(timeLimit * 3.5); // ← 追加：ちょうちょうげきレアは、じかんが3.5ばいに
+  else if (isUltraRare) timeLimit = Math.round(timeLimit * 3); // ← 追加：ちょうげきレアは、じかんが3ばいに
+  else if (isWeak) timeLimit = Math.round(timeLimit * 1.6); // ← 追加：よわよわてきは、じかんがさらに長くなる
+  if (bonusNextTime) {
+    timeLimit = Math.round(timeLimit * 1.5); // ← 追加：レベルアップのごほうびで、じかんがさらにのびる
+    bonusNextTime = false;
+    popup('🎁ごほうびで じかんアップ！', 140, 150);
+  }
+  timeLeft = timeLimit;
+  timerFill.style.width = '100%';
+
+  clearInterval(tickInterval);
+  tickInterval = setInterval(() => {
+    timeLeft -= 40;
+    const pct = Math.max(timeLeft / timeLimit, 0) * 100;
+    timerFill.style.width = pct + '%';
+    if (timeLeft <= 0) {
+      clearInterval(tickInterval);
+      enemyAttacks();
+    }
+  }, 40);
+}
+
+function enemyAttacks() {
+  combo = 0;
+  if (isFinal) {
+    playerHP = 0;
+    updateHUD();
+    popup('わんぱん…っ💥', 240, 300);
+    handleZeroHP();
+    return;
+  }
+  let dmg = Math.round((isLastBoss ? 40 : ((isBoss || isBoss2 || isMidBoss) ? 30 : 15)) * DIFF_SETTINGS[difficulty].dmgMult * itemDmgReduction); // ← 追加：🛡️まもりのお守りのこうか
+  if (isSuperStrong) dmg = Math.round(dmg * 3); // ← 追加：だいばくはつキングは、こうげきも3ばいつよい
+  else if (isCoinMob) dmg = Math.round(dmg * 0.7); // ← 追加：マネーバッグくんは、こうげきもすこしよわい
+  else if (isMegaLucky) dmg = Math.max(1, Math.round(dmg / 67)); // ← 追加：ちょうちょうげきレアは、ダメージが67ぶんの1に
+  else if (isUltraRare) dmg = Math.max(1, Math.round(dmg / 10)); // ← 追加：ちょうげきレアは、ダメージが10ぶんの1に
+  else if (isWeak) dmg = Math.round(dmg / 2); // ← 追加：よわよわてきは、こうげきもはんぶん
+  playerHP -= dmg;
+  updateHUD();
+  popup('-' + dmg + ' 被弾っ💦', 240, 300);
+  if (playerHP <= 0) { if (handleZeroHP()) return; }
+  wave++;
+  spawnEnemy();
+}
+
+function defeatEnemy() {
+  clearInterval(tickInterval);
+  playFinisherSound(); // ← 追加：トドメの「チュドーン！」サウンド
+  previousMissed = missThisWave > 0; // ← 追加：この単語でミスしてたかをきろく
+  previousWordLenSnapshot = currentWordLen; // ← 追加：この単語の長さをきろく
+  combo++;
+  maxCombo = Math.max(maxCombo, combo);
+  comboFlashFx(combo); // ← 追加：ノーミスでたおしつづけたら「〇コンボ！」を出す
+  if (combo % itemComboHealInterval === 0) {
+    // ▼ 追加：ノーミスで3れんぞくたおすたびに、HPをすこし回復する
+    const healAmount = Math.min(itemComboHealAmount, maxHP - playerHP);
+    if (healAmount > 0) {
+      playerHP += healAmount;
+      comboHealFx(healAmount);
+    }
+  }
+  const base = isSuperStrong ? 500 : (isFinal ? 1000 : (isLastBoss ? 200 : ((isBoss || isBoss2 || isMidBoss) ? 80 : 20)));
+  let gain = Math.round((base + combo * (isFinal ? 10 : (isLastBoss ? 5 : 3))) * itemScoreMult); // ← 追加：💯スコアブーストのこうか
+  if (itemFirstStrikePending) {
+    // ▼ 追加：🥇はじめのいちげきのこうか(さいしょのてきのスコアが3ばい)
+    gain = gain * 3;
+    itemFirstStrikePending = false;
+    popup('🥇はじめのいちげき発動！スコア3ばい！', 90, 150);
+  }
+  score += gain;
+  defeatBurstFx(); // ← 追加：たおしたときの、はでな「ドーン！」えんしゅつ
+  enemySprite.classList.add('hit');
+  enemyFill.style.width = '0%';
+  popup('+' + gain + ' ' + comboMessage(combo), 240, 200);
+  if (isFinal) {
+    finalHitsLeft--;
+    if (finalHitsLeft <= 0) {
+      updateHUD();
+      setTimeout(() => endGame(true), 350);
+    } else {
+      popup('ヒット！のこり' + finalHitsLeft + 'かい💥', 200, 160);
+      updateHUD();
+      setTimeout(() => {
+        spawnEnemy();
+        enemyFill.style.width = (finalHitsLeft / finalHitsRequired * 100) + '%'; // ← のこりぶんだけHPをひょうじ
+      }, 500);
+    }
+    return;
+  }
+  if (isBoss && bossHitsRequired > 1) {
+    bossHitsLeft--;
+    if (bossHitsLeft > 0) {
+      // ▼ 追加：まだたおしきれてないので、もういちどおなじウェーブでたたかう
+      popup('ヒット！のこり' + bossHitsLeft + 'かい💥', 200, 160);
+      updateHUD();
+      setTimeout(() => {
+        spawnEnemy();
+        enemyFill.style.width = (bossHitsLeft / bossHitsRequired * 100) + '%'; // ← のこりぶんだけHPをひょうじ
+      }, 500);
+      return;
+    }
+  }
+  if (isBoss2 && bossHitsRequired > 1) {
+    boss2HitsLeft--;
+    if (boss2HitsLeft > 0) {
+      // ▼ 追加：まだたおしきれてないので、もういちどおなじウェーブでたたかう
+      popup('ヒット！のこり' + boss2HitsLeft + 'かい💥', 200, 160);
+      updateHUD();
+      setTimeout(() => {
+        spawnEnemy();
+        enemyFill.style.width = (boss2HitsLeft / bossHitsRequired * 100) + '%'; // ← のこりぶんだけHPをひょうじ
+      }, 500);
+      return;
+    }
+  }
+  if (isMidBoss && bossHitsRequired > 1) {
+    midBossHitsLeft--;
+    if (midBossHitsLeft > 0) {
+      // ▼ 追加：まだたおしきれてないので、もういちどおなじウェーブでたたかう
+      popup('ヒット！のこり' + midBossHitsLeft + 'かい💥', 200, 160);
+      updateHUD();
+      setTimeout(() => {
+        spawnEnemy();
+        enemyFill.style.width = (midBossHitsLeft / bossHitsRequired * 100) + '%'; // ← のこりぶんだけHPをひょうじ
+      }, 500);
+      return;
+    }
+  }
+  if (missThisWave === 0 && playerHP < maxHP) {
+    playerHP = Math.min(maxHP, playerHP + 1);
+    popup('+1 かいふく💚', 140, 240);
+  }
+  addAchieveKillProgress(); // ← 追加：🎯たっせいミッションのきろく(たおした数)
+  if (isBoss || isBoss2 || isMidBoss || isLastBoss || isFinal) addAchieveBossProgress(); // ← 追加：ボスけいをたおした数もきろく
+  const expGain = Math.round((isLastBoss ? 70 : ((isBoss || isBoss2 || isMidBoss) ? 30 : 8)) * itemExpMult); // ← 変更：たおしたてきに合わせてEXPをもらう＋🎯めいちゅうのふだのこうか
+  gainExp(expGain);
+  updateHUD();
+  setTimeout(() => {
+    wave++;
+    if (itemRegenActive && wave % 5 === 0 && playerHP < maxHP) {
+      // ▼ 追加：🍯みつのつぼのこうか(5ウェーブごとにHP+10)
+      playerHP = Math.min(maxHP, playerHP + 10);
+      popup('🍯みつのちから！HP+10', 130, 180);
+    }
+    spawnEnemy();
+  }, 350);
+}
+
+function handleKey(e) {
+  if (!running) {
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      startGame();
+    }
+    return;
+  }
+  const key = e.key;
+  if (key.length !== 1 || !/[a-zA-Z\-]/.test(key)) return; // ← 変更：「－」キーもうてるようにする
+  e.preventDefault();
+  const lowerKey = key.toLowerCase();
+
+  // ▼ ここが直したところ②の続き：どっちの書き方で打ってもいいように判定するよ
+  // 今のこりっている書き方の中から「今うった文字」に合うものだけ残す
+  const matched = currentVariants.filter(v => v[typedIndex] === lowerKey);
+
+  if (matched.length > 0) {
+    playKeyClack(); // ← 変更：正解キーの「カタカタ」打鍵音
+    currentVariants = matched;
+    typedIndex++;
+    renderRomaji();
+    // ▼ 追加：うった分だけ、HPバーをリアルタイムでへらす
+    const progress = Math.min(1, typedIndex / currentWordLen);
+    const newWidth = Math.max(0, enemyHpSegStart - enemyHpSegSize * progress);
+    enemyFill.style.width = newWidth + '%';
+    // どれか1つでも「ちょうどぴったり」打ち終わってたら勝ち！
+    if (currentVariants.some(v => v.length === typedIndex)) {
+      defeatEnemy();
+    }
+  } else {
+    playMissBuzz(); // ← 変更：ミスキーの「ブブーッ」ブザー音
+    missEffectFx(); // ← 追加：見た目でもわかる赤フラッシュ＋❌マーク
+    if (itemComboGuardActive) {
+      // ▼ 追加：⏳セカンドチャンスのこうか(さいしょの1回だけコンボがきれない)
+      itemComboGuardActive = false;
+      popup('⏳セカンドチャンス発動！コンボけいぞく！', 90, 170);
+    } else {
+      combo = 0;
+    }
+    missThisWave++;
+    // ▼ 変更：ミスダメージをアップ＋同じ敵でミスするほど、どんどん痛くなるようにする(🕶️しんぼうのおふだで増えなくなる)
+    let missDmg = itemMissFlatActive ? 2 : 2 + (missThisWave - 1) * 1.5; // 1回目=2, 2回目=3.5, 3回目=5, ...
+    missDmg = Math.round(Math.min(missDmg, 10) * DIFF_SETTINGS[difficulty].dmgMult * itemDmgReduction); // むずかしさ・アイテムぶんも反映、10でキャップ
+    if (itemMissGuardActive) {
+      // ▼ 追加：🎯ミスガードのこうか(さいしょの1回だけダメージゼロ)
+      missDmg = 0;
+      itemMissGuardActive = false;
+      popup('🎯ミスガード発動！ノーダメージ！', 90, 190);
+    }
+    playerHP -= missDmg;
+    popup('-' + missDmg + '💥', 150, 220);
+    updateHUD();
+    wordBubble.style.transform = 'translateX(-6px)';
+    setTimeout(() => { wordBubble.style.transform = 'translateX(6px)'; }, 60);
+    setTimeout(() => { wordBubble.style.transform = 'translateX(0)'; }, 120);
+    if (playerHP <= 0) { if (handleZeroHP()) return; }
+  }
+}
+
+window.addEventListener('keydown', handleKey);
+
+function startGame(chosenDifficulty) {
+  initAudio(); // ← 追加：おとをつかえるようにする(ボタンをおしたこのタイミングでOK)
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (chosenDifficulty) difficulty = chosenDifficulty;
+  // ▼ 変更：むずかしさごとに、さいごのウェーブをかえる
+  FINAL_WAVE = (difficulty === 'EXTREME') ? 80 : (difficulty === 'HARD') ? 60 : (difficulty === 'EASY') ? 35 : (difficulty === 'VERY_EASY') ? 20 : 45;
+  const s = DIFF_SETTINGS[difficulty];
+  score = 0; combo = 0; maxCombo = 0; wave = 1;
+  playerHP = s.hpStart; maxHP = s.maxHPStart; baseMaxHP = s.maxHPStart; level = 1;
+  itemTimeBonus = 1; itemDmgReduction = 1; // ← 追加：アイテムのこうかをいったんリセット
+  itemLuckMult = 1; itemScoreMult = 1; itemCoinBonus = false; itemMissGuardActive = false; itemReviveCharges = 0;
+  itemExpMult = 1; itemBonusScoreFlat = 0; itemShortWordBias = false; itemFirstStrikePending = false; itemComboHealAmount = 12;
+  itemPhantomPearlActive = false;
+  itemBonusCoinFlat = 0; itemFirstWeakPending = false; itemMissFlatActive = false; itemComboHealInterval = 3;
+  itemCoinMult = 1; // ← 追加：コインばいりつもリセット
+  itemRainbowActive = false; itemComboGuardActive = false; itemRestTicketActive = false; itemRegenActive = false;
+  itemHitReductionActive = false; itemHitReductionMinorActive = false; itemHitReductionMaxActive = false; // ← 追加：たおす回数へらしアイテムもリセット
+  itemHalveWaveActive = false; // ← 追加：じくうのねじれもリセット
+  applyPendingItems(); // ← 追加：ショップで買ったアイテムのこうかをてきようする
+  if (itemHalveWaveActive) {
+    // ▼ 追加：🌀じくうのねじれのこうか(さいごのウェーブすうが半分に)
+    FINAL_WAVE = Math.max(5, Math.round(FINAL_WAVE / 2));
+  }
+  exp = 0; expToNext = 50; updateExpUI(); // ← 追加：EXPもリセット
+  recentWords = []; // ← 追加：単語のかぶりふせぎもリセット
+  bonusNextWeak = false; bonusNextTime = false; // ← 追加：レベルアップのごほうびフラグもリセット
+  previousMissed = false; previousWordLenSnapshot = 6; // ← 追加：ミスした後の単語ちょうせいもリセット
+  pendingNextEntry = null; // ← 追加：先読みの単語もリセット
+  currentStageIdx = -1; // ← 追加：たたかう場所を1こめからリセット
+  arena.classList.remove('rare-stage'); // ← 追加：げきレアの見た目もリセット
+  resultTitle.classList.remove('goldClearText'); // ← 追加：金色クリア文字もリセット
+  isWeak = false; isUltraRare = false; isMegaLucky = false; isCoinMob = false; // ← 追加：レアイベントの状態もリセット
+  finalHitsRequired = itemHitReductionMaxActive ? 1 : (itemHitReductionActive ? reduceHits(s.finalHits) : (itemHitReductionMinorActive ? reduceHitsMinor(s.finalHits) : s.finalHits)); // ← 追加：⚡神王レア／⚔️神レア／🗡️超激レアのたおす回数へらしこうか
+  finalHitsLeft = finalHitsRequired; // ← 変更：ラスボスののこりかいすうもリセット
+  bossHitsRequired = itemHitReductionMaxActive ? 1 : (itemHitReductionActive ? reduceHits(s.bossHits) : (itemHitReductionMinorActive ? reduceHitsMinor(s.bossHits) : s.bossHits)); // ← 追加：⚡神王レア／⚔️神レア／🗡️超激レアのたおす回数へらしこうか
+  bossHitsLeft = bossHitsRequired;
+  bossWaveTracker = -1; // ← 追加：ボスの目印もリセット
+  diffTag.textContent = s.label;
+  diffTag.style.display = 'inline-block';
+  updateHUD();
+  startOverlay.style.display = 'none';
+  overOverlay.style.display = 'none';
+  document.getElementById('gameControls').style.display = 'flex'; // ← 追加：やり直す・難易度選択ボタンを表示
+  running = true;
+  spawnEnemy();
+}
+
+// ▼ 追加：HPが0になったとき、🔄リトライけんがあれば復活する。なければふつうにゲームおわり
+function handleZeroHP() {
+  if (itemReviveCharges > 0) {
+    itemReviveCharges--;
+    playerHP = Math.max(1, Math.ceil(maxHP * 0.3));
+    updateHUD();
+    popup('🔄リトライけんで復活！！のこり' + itemReviveCharges + '回', 90, 190);
+    return false; // ← ゲームはおわらない
+  }
+  endGame(false);
+  return true; // ← ゲームがおわった
+}
+
+function endGame(cleared) {
+  running = false;
+  clearInterval(tickInterval);
+  stopBgm(); // ← 追加：バトルがおわったら、BGMもとめる
+  if (cleared) {
+    if (difficulty === 'EASY' || difficulty === 'NORMAL') {
+      unlockHard(); // ← 変更：「かんたん」か「ふつう」でクリアしたときだけかいほう
+    }
+    if (difficulty === 'HARD') {
+      unlockExtreme(); // ← 追加：「むずかしい」でクリアしたら「超むずかしい」もかいほう
+    }
+    // ▼ 追加：むずかしさクリアで、ショップのレアリティもかいほうする
+    if (difficulty === 'VERY_EASY') unlockRarity('ultra');
+    if (difficulty === 'EASY') unlockRarity('legendary');
+    if (difficulty === 'NORMAL') unlockRarity('divine');
+    if (difficulty === 'HARD') unlockRarity('godking'); // ← 追加：神王レアをかいほう
+    if (difficulty === 'EXTREME') unlockExtremeCleared(); // ← 追加：超むずかしいクリアで、とくべつなアイテムをかいほう
+    if (difficulty === 'EXTREME') unlockRarity('phantom'); // ← 追加：超むずかしいクリアで、？？？？レアもかいほう
+    addAchieveDiffCleared(difficulty); // ← 追加：🎯なんしゅるいクリアしたかのきろく
+  }
+  score += itemBonusScoreFlat; // ← 追加：🌙つきよのおまもりのこうか
+  // ▼ 追加：スコアをコインにへんかんする
+  const earnedCoins = Math.round((Math.floor(score / (itemCoinBonus ? 35 : 50)) + itemBonusCoinFlat) * itemCoinMult); // ← 追加：🪙コインかんれんアイテムのこうか
+  coins += earnedCoins;
+  saveCoins();
+  addAchieveCoinsEarned(earnedCoins); // ← 追加：🎯かせいだコインのきろく
+  updateCoinUI();
+  const coinLine = '<br>🪙獲得コイン：<b style="color:#7fff8a">+' + earnedCoins + '</b>';
+  if (cleared) {
+    resultTitle.textContent = 'くりあーーーーーーーーーーーーーーーーっ！！！';
+    resultDetail.innerHTML =
+      'さいごのてきをたおした〜！おめでとう🎉<br>' +
+      'スコア：<b style="color:#ffd23f">' + score + '</b><br>' +
+      '最大コンボ：' + maxCombo + coinLine;
+    if (difficulty === 'EXTREME') {
+      // ▼ 追加：超むずかしいクリアじの、とくべつなえんしゅつ
+      arena.classList.add('rare-stage');
+      arena.style.background = RARE_STAGE.bg;
+      arena.style.setProperty('--mountainColor', RARE_STAGE.mountain);
+      resultTitle.textContent = '🏆 でんせつのクリア！！！ 🏆';
+      resultTitle.classList.add('goldClearText');
+    }
+  } else {
+    resultTitle.textContent = 'HPがゼロに〜っ😭';
+    resultDetail.innerHTML =
+      'スコア：<b style="color:#ffd23f">' + score + '</b><br>' +
+      '到達ウェーブ：' + wave + '<br>' +
+      '最大コンボ：' + maxCombo + coinLine;
+  }
+  overOverlay.style.display = 'flex';
+  saveBest(score);
+  loadBest();
+}
+
+// ▼ 追加：3・2・1のカウントダウンをしてから、しょりをじっこうする
+const countdownEl = document.getElementById('countdownOverlay');
+function runCountdown(n, onDone) {
+  if (n <= 0) {
+    countdownEl.classList.remove('show');
+    onDone();
+    return;
+  }
+  countdownEl.innerHTML = '<span>' + n + '</span>';
+  countdownEl.classList.add('show');
+  setTimeout(() => runCountdown(n - 1, onDone), 700);
+}
+// ▼ 追加：むずかしさをえらんだとき・やり直すとき、共通でカウントダウンしてからスタートする
+function startGameWithCountdown(chosenDifficulty) {
+  initAudio(); // ← 追加：クリックしたこのタイミングで、音の準備もすませておく
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  running = false; // カウントダウン中は、たたかいをいったんストップ
+  clearInterval(tickInterval);
+  runCountdown(3, () => {
+    startGame(chosenDifficulty);
+  });
+}
+
+document.getElementById('veasyBtn').addEventListener('click', () => startGameWithCountdown('VERY_EASY'));
+document.getElementById('easyBtn').addEventListener('click', () => startGameWithCountdown('EASY'));
+document.getElementById('normalBtn').addEventListener('click', () => startGameWithCountdown('NORMAL'));
+document.getElementById('hardBtn').addEventListener('click', () => {
+  if (!isHardUnlocked()) {
+    popup('🔒ラスボスをたおすとかいほう！', 90, 200);
+    return;
+  }
+  startGameWithCountdown('HARD');
+});
+document.getElementById('extremeBtn').addEventListener('click', () => {
+  if (!isExtremeUnlocked()) {
+    popup('🔒むずかしいをクリアするとかいほう！', 60, 200);
+    return;
+  }
+  startGameWithCountdown('EXTREME');
+});
+
+// ▼ 追加：最初からやり直す・難易度選択にもどる
+document.getElementById('restartBtn').addEventListener('click', () => {
+  startGameWithCountdown(); // ← ひきすうなしなので、今のむずかしさのままさいしょからやり直す
+});
+document.getElementById('backToMenuBtn').addEventListener('click', () => {
+  running = false;
+  clearInterval(tickInterval);
+  stopBgm();
+  overOverlay.style.display = 'none';
+  startOverlay.style.display = 'flex';
+});
+// ▼ 追加：ショップをひらく・とじる
+document.getElementById('openShopBtn').addEventListener('click', () => {
+  startOverlay.style.display = 'none';
+  document.getElementById('shopOverlay').style.display = 'flex';
+  renderShop();
+});
+document.getElementById('closeShopBtn').addEventListener('click', () => {
+  document.getElementById('shopOverlay').style.display = 'none';
+  startOverlay.style.display = 'flex';
+});
+// ▼ 追加：くじびきをひらく・とじる・ひく
+document.getElementById('openKujiBtn').addEventListener('click', () => {
+  startOverlay.style.display = 'none';
+  document.getElementById('kujiOverlay').style.display = 'flex';
+  document.getElementById('kujiResult').textContent = '';
+  document.getElementById('kujiBox').textContent = '🎁';
+  updateKujiUI();
+});
+document.getElementById('closeKujiBtn').addEventListener('click', () => {
+  document.getElementById('kujiOverlay').style.display = 'none';
+  startOverlay.style.display = 'flex';
+});
+// ▼ 追加：ミッションをひらく・とじる
+document.getElementById('openMissionBtn').addEventListener('click', () => {
+  startOverlay.style.display = 'none';
+  document.getElementById('missionOverlay').style.display = 'flex';
+  renderMissions();
+});
+document.getElementById('closeMissionBtn').addEventListener('click', () => {
+  document.getElementById('missionOverlay').style.display = 'none';
+  startOverlay.style.display = 'flex';
+});
+document.getElementById('drawKujiBtn').addEventListener('click', drawKuji);
+// ▼ 追加：くじびきボタンを5秒間おしつづけたら、はなすまで連続でひけるようにする
+attachLongPress(
+  document.getElementById('drawKujiBtn'),
+  drawKuji,
+  () => !document.getElementById('drawKujiBtn').disabled && (!hasDrawnKujiToday() || kujiTickets > 0),
+  5000, 900, 100, 60
+);
+document.getElementById('drawKujiDivineBtn').addEventListener('click', drawKujiDivineBoost);
+retryBtn.addEventListener('click', () => startGame()); // ← 同じむずかしさのままリトライ
+
+// ▼ 追加：ミュートボタンをおしたときのしくみ
+document.getElementById('muteBtn').addEventListener('click', () => {
+  musicMuted = !musicMuted;
+  document.getElementById('muteBtn').textContent = musicMuted ? '🔇' : '🔊';
+});
+</script>
+</body>
+</html>
